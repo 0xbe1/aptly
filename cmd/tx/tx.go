@@ -15,4 +15,5 @@ func init() {
 	TxCmd.AddCommand(balanceChangeCmd)
 	TxCmd.AddCommand(transfersCmd)
 	TxCmd.AddCommand(traceCmd)
+	TxCmd.AddCommand(graphCmd)
 }
