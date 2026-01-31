@@ -13,4 +13,5 @@ var TxCmd = &cobra.Command{
 func init() {
 	TxCmd.AddCommand(viewCmd)
 	TxCmd.AddCommand(balanceChangeCmd)
+	TxCmd.AddCommand(transfersCmd)
 }
