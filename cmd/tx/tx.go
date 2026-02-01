@@ -24,6 +24,7 @@ func init() {
 	TxCmd.AddCommand(transfersCmd)
 	TxCmd.AddCommand(traceCmd)
 	TxCmd.AddCommand(graphCmd)
+	TxCmd.AddCommand(simulateCmd)
 }
 
 func runTx(cmd *cobra.Command, args []string) error {
