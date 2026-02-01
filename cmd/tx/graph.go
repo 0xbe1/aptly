@@ -16,10 +16,10 @@ import (
 var prettyOutput bool
 
 var graphCmd = &cobra.Command{
-	Use:   "graph <version_or_hash>",
+	Use:   "graph [version_or_hash]",
 	Short: "Show asset transfers as a graph",
 	Long:  `Pairs withdraw→deposit events for the same asset to show transfer flows.`,
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE:  runGraph,
 }
 
@@ -56,7 +56,7 @@ func runGraph(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
 
-	userTx, version, err := fetchTransaction(client, args[0])
+	userTx, version, err := getTransaction(client, args)
 	if err != nil {
 		return err
 	}

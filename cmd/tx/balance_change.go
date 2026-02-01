@@ -13,10 +13,10 @@ import (
 )
 
 var balanceChangeCmd = &cobra.Command{
-	Use:   "balance-change <version_or_hash>",
+	Use:   "balance-change [version_or_hash]",
 	Short: "Show balance changes in a transaction",
 	Long:  `Analyzes FungibleStore balance changes between the transaction and the previous version.`,
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE:  runBalanceChange,
 }
 
@@ -42,19 +42,17 @@ func runBalanceChange(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
 
-	userTx, version, err := fetchTransaction(client, args[0])
+	userTx, version, err := getTransaction(client, args)
 	if err != nil {
 		return err
-	}
-
-	if version == 0 {
-		return fmt.Errorf("cannot get balance change for version 0")
 	}
 
 	// Extract FungibleStore changes from current transaction
 	stores := extractFungibleStoresFromUserTx(userTx)
 
-	// For each store, query the previous balance at version-1
+	// For each store, query the previous balance
+	// For simulated txs (version=0), query current state
+	// For committed txs, query at version-1
 	changes := []BalanceChange{}
 	for _, store := range stores {
 		addr := aptos.AccountAddress{}
@@ -63,9 +61,18 @@ func runBalanceChange(cmd *cobra.Command, args []string) error {
 		}
 
 		prevBalance := "0"
-		prevResource, err := client.AccountResource(addr, "0x1::fungible_asset::FungibleStore", version-1)
-		if err == nil {
-			prevBalance = getString(prevResource, "data", "balance")
+		if version == 0 {
+			// Simulated transaction: query current ledger state
+			prevResource, err := client.AccountResource(addr, "0x1::fungible_asset::FungibleStore")
+			if err == nil {
+				prevBalance = getString(prevResource, "data", "balance")
+			}
+		} else {
+			// Committed transaction: query at version-1
+			prevResource, err := client.AccountResource(addr, "0x1::fungible_asset::FungibleStore", version-1)
+			if err == nil {
+				prevBalance = getString(prevResource, "data", "balance")
+			}
 		}
 
 		change := calculateChange(prevBalance, store.balance)

@@ -3,9 +3,11 @@ package tx
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"strconv"
 
-	"github.com/aptos-labs/aptos-go-sdk"
 	"github.com/spf13/cobra"
 )
 
@@ -29,21 +31,48 @@ func runTx(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	}
 
-	client, err := aptos.NewClient(aptos.MainnetConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create client: %w", err)
-	}
-
-	userTx, _, err := fetchTransaction(client, args[0])
+	rawJSON, err := fetchTransactionRaw(args[0])
 	if err != nil {
 		return err
 	}
 
+	var data any
+	if err := json.Unmarshal(rawJSON, &data); err != nil {
+		return fmt.Errorf("failed to parse response: %w", err)
+	}
+
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(userTx); err != nil {
+	if err := encoder.Encode(data); err != nil {
 		return fmt.Errorf("failed to encode response: %w", err)
 	}
 
 	return nil
+}
+
+// fetchTransactionRaw fetches raw JSON from the Aptos API
+func fetchTransactionRaw(versionOrHash string) ([]byte, error) {
+	var url string
+	if _, err := strconv.ParseUint(versionOrHash, 10, 64); err == nil {
+		url = fmt.Sprintf("https://api.mainnet.aptoslabs.com/v1/transactions/by_version/%s", versionOrHash)
+	} else {
+		url = fmt.Sprintf("https://api.mainnet.aptoslabs.com/v1/transactions/by_hash/%s", versionOrHash)
+	}
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch transaction: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(body))
+	}
+
+	return body, nil
 }

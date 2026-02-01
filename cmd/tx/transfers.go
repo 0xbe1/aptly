@@ -11,10 +11,10 @@ import (
 )
 
 var transfersCmd = &cobra.Command{
-	Use:   "transfers <version_or_hash>",
+	Use:   "transfers [version_or_hash]",
 	Short: "Show asset transfers in a transaction",
 	Long:  `Lists Withdraw/Deposit events from a transaction.`,
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE:  runTransfers,
 }
 
@@ -32,7 +32,7 @@ func runTransfers(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
 
-	userTx, version, err := fetchTransaction(client, args[0])
+	userTx, version, err := getTransaction(client, args)
 	if err != nil {
 		return err
 	}
