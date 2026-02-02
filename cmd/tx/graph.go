@@ -7,8 +7,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/0xbe1/apt/pkg/api"
 	"github.com/aptos-labs/aptos-go-sdk"
-	"github.com/aptos-labs/aptos-go-sdk/api"
+	aptosapi "github.com/aptos-labs/aptos-go-sdk/api"
 	"github.com/aptos-labs/aptos-go-sdk/bcs"
 	"github.com/spf13/cobra"
 )
@@ -51,7 +52,7 @@ type TransferGraph struct {
 }
 
 func runGraph(cmd *cobra.Command, args []string) error {
-	client, err := aptos.NewClient(aptos.MainnetConfig)
+	client, err := aptos.NewClient(api.GetNetworkConfig())
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
@@ -83,7 +84,7 @@ type pendingWithdraw struct {
 	amount  string
 }
 
-func buildTransferGraph(userTx *api.UserTransaction, storeInfo map[string]transferStoreMetadata, client *aptos.Client, version uint64) TransferGraph {
+func buildTransferGraph(userTx *aptosapi.UserTransaction, storeInfo map[string]transferStoreMetadata, client *aptos.Client, version uint64) TransferGraph {
 	graph := TransferGraph{
 		Transfers: []Transfer{},
 		Orphans: Orphans{

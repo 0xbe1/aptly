@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/aptos-labs/aptos-go-sdk"
-	"github.com/aptos-labs/aptos-go-sdk/api"
+	aptosapi "github.com/aptos-labs/aptos-go-sdk/api"
 )
 
 // isStdinPipe returns true if stdin has piped data
@@ -21,13 +21,13 @@ func isStdinPipe() bool {
 }
 
 // readTransactionFromStdin reads and unmarshals UserTransaction from stdin.
-func readTransactionFromStdin() (*api.UserTransaction, error) {
+func readTransactionFromStdin() (*aptosapi.UserTransaction, error) {
 	data, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read from stdin: %w", err)
 	}
 
-	var userTx api.UserTransaction
+	var userTx aptosapi.UserTransaction
 	if err := json.Unmarshal(data, &userTx); err != nil {
 		return nil, fmt.Errorf("failed to parse transaction JSON: %w", err)
 	}
@@ -37,7 +37,7 @@ func readTransactionFromStdin() (*api.UserTransaction, error) {
 
 // getTransaction returns a transaction from stdin or fetches it from the API.
 // Returns the transaction, its version (0 for simulated transactions), and any error.
-func getTransaction(client *aptos.Client, args []string) (*api.UserTransaction, uint64, error) {
+func getTransaction(client *aptos.Client, args []string) (*aptosapi.UserTransaction, uint64, error) {
 	if isStdinPipe() {
 		userTx, err := readTransactionFromStdin()
 		if err != nil {
@@ -58,7 +58,7 @@ func getTransaction(client *aptos.Client, args []string) (*api.UserTransaction, 
 // fetchTransaction fetches a transaction by version or hash.
 // If the argument parses as a number, it's treated as a version; otherwise as a hash.
 // Returns the UserTransaction and its version.
-func fetchTransaction(client *aptos.Client, versionOrHash string) (*api.UserTransaction, uint64, error) {
+func fetchTransaction(client *aptos.Client, versionOrHash string) (*aptosapi.UserTransaction, uint64, error) {
 	// Try parsing as version first
 	if version, err := strconv.ParseUint(versionOrHash, 10, 64); err == nil {
 		tx, err := client.TransactionByVersion(version)
