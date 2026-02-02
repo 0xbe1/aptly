@@ -3,8 +3,13 @@ package cmd
 import (
 	"os"
 
+	"github.com/0xbe1/apt/cmd/account"
+	"github.com/0xbe1/apt/cmd/block"
+	"github.com/0xbe1/apt/cmd/events"
 	"github.com/0xbe1/apt/cmd/ledger"
+	"github.com/0xbe1/apt/cmd/table"
 	"github.com/0xbe1/apt/cmd/tx"
+	"github.com/0xbe1/apt/cmd/view"
 	"github.com/spf13/cobra"
 )
 
@@ -22,6 +27,11 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.AddCommand(account.AccountCmd)
+	rootCmd.AddCommand(block.BlockCmd)
+	rootCmd.AddCommand(events.EventsCmd)
 	rootCmd.AddCommand(ledger.LedgerCmd)
+	rootCmd.AddCommand(table.TableCmd)
 	rootCmd.AddCommand(tx.TxCmd)
+	rootCmd.AddCommand(view.ViewCmd)
 }
