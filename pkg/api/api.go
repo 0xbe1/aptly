@@ -7,9 +7,18 @@ import (
 	"io"
 	"net/http"
 	"os"
+
+	aptos "github.com/aptos-labs/aptos-go-sdk"
 )
 
 var BaseURL = "https://api.mainnet.aptoslabs.com/v1"
+
+// GetNetworkConfig returns an Aptos NetworkConfig using the current BaseURL.
+func GetNetworkConfig() aptos.NetworkConfig {
+	return aptos.NetworkConfig{
+		NodeUrl: BaseURL,
+	}
+}
 
 // GetAndPrint makes a GET request to the URL and prints the JSON response.
 func GetAndPrint(url string) error {

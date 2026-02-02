@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/0xbe1/apt/pkg/api"
 	"github.com/aptos-labs/aptos-go-sdk"
 	"github.com/aptos-labs/aptos-go-sdk/bcs"
 	"github.com/aptos-labs/aptos-go-sdk/crypto"
@@ -74,7 +75,7 @@ func runSimulate(cmd *cobra.Command, args []string) error {
 		typeArgs = append(typeArgs, ta)
 	}
 
-	client, err := aptos.NewClient(aptos.MainnetConfig)
+	client, err := aptos.NewClient(api.GetNetworkConfig())
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
@@ -117,7 +118,7 @@ func runSimulate(cmd *cobra.Command, args []string) error {
 
 	// POST to simulate endpoint
 	resp, err := http.Post(
-		"https://api.mainnet.aptoslabs.com/v1/transactions/simulate",
+		api.BaseURL+"/transactions/simulate",
 		"application/x.aptos.signed_transaction+bcs",
 		bytes.NewReader(txnBytes),
 	)

@@ -7,8 +7,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/0xbe1/apt/pkg/api"
 	"github.com/aptos-labs/aptos-go-sdk"
-	"github.com/aptos-labs/aptos-go-sdk/api"
+	aptosapi "github.com/aptos-labs/aptos-go-sdk/api"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +38,7 @@ type fungibleStoreInfo struct {
 }
 
 func runBalanceChange(cmd *cobra.Command, args []string) error {
-	client, err := aptos.NewClient(aptos.MainnetConfig)
+	client, err := aptos.NewClient(api.GetNetworkConfig())
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
@@ -98,17 +99,17 @@ func runBalanceChange(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func extractFungibleStoresFromUserTx(userTx *api.UserTransaction) []fungibleStoreInfo {
+func extractFungibleStoresFromUserTx(userTx *aptosapi.UserTransaction) []fungibleStoreInfo {
 	var stores []fungibleStoreInfo
 
 	// First pass: extract ObjectCore owners (address -> owner)
 	owners := make(map[string]string)
 	for _, change := range userTx.Changes {
-		if change.Type != api.WriteSetChangeVariantWriteResource {
+		if change.Type != aptosapi.WriteSetChangeVariantWriteResource {
 			continue
 		}
 
-		writeResource, ok := change.Inner.(*api.WriteSetChangeWriteResource)
+		writeResource, ok := change.Inner.(*aptosapi.WriteSetChangeWriteResource)
 		if !ok || writeResource.Data == nil {
 			continue
 		}
@@ -124,11 +125,11 @@ func extractFungibleStoresFromUserTx(userTx *api.UserTransaction) []fungibleStor
 
 	// Second pass: extract FungibleStores
 	for _, change := range userTx.Changes {
-		if change.Type != api.WriteSetChangeVariantWriteResource {
+		if change.Type != aptosapi.WriteSetChangeVariantWriteResource {
 			continue
 		}
 
-		writeResource, ok := change.Inner.(*api.WriteSetChangeWriteResource)
+		writeResource, ok := change.Inner.(*aptosapi.WriteSetChangeWriteResource)
 		if !ok || writeResource.Data == nil {
 			continue
 		}

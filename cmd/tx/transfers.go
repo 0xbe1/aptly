@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/0xbe1/apt/pkg/api"
 	"github.com/aptos-labs/aptos-go-sdk"
-	"github.com/aptos-labs/aptos-go-sdk/api"
+	aptosapi "github.com/aptos-labs/aptos-go-sdk/api"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +28,7 @@ type TransferEvent struct {
 }
 
 func runTransfers(cmd *cobra.Command, args []string) error {
-	client, err := aptos.NewClient(aptos.MainnetConfig)
+	client, err := aptos.NewClient(api.GetNetworkConfig())
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
@@ -57,17 +58,17 @@ type transferStoreMetadata struct {
 	asset string
 }
 
-func extractTransferStoreInfoFromUserTx(userTx *api.UserTransaction) map[string]transferStoreMetadata {
+func extractTransferStoreInfoFromUserTx(userTx *aptosapi.UserTransaction) map[string]transferStoreMetadata {
 	info := make(map[string]transferStoreMetadata)
 
 	// Extract owners from ObjectCore
 	owners := make(map[string]string)
 	for _, change := range userTx.Changes {
-		if change.Type != api.WriteSetChangeVariantWriteResource {
+		if change.Type != aptosapi.WriteSetChangeVariantWriteResource {
 			continue
 		}
 
-		writeResource, ok := change.Inner.(*api.WriteSetChangeWriteResource)
+		writeResource, ok := change.Inner.(*aptosapi.WriteSetChangeWriteResource)
 		if !ok || writeResource.Data == nil {
 			continue
 		}
@@ -83,11 +84,11 @@ func extractTransferStoreInfoFromUserTx(userTx *api.UserTransaction) map[string]
 
 	// Extract assets from FungibleStore
 	for _, change := range userTx.Changes {
-		if change.Type != api.WriteSetChangeVariantWriteResource {
+		if change.Type != aptosapi.WriteSetChangeVariantWriteResource {
 			continue
 		}
 
-		writeResource, ok := change.Inner.(*api.WriteSetChangeWriteResource)
+		writeResource, ok := change.Inner.(*aptosapi.WriteSetChangeWriteResource)
 		if !ok || writeResource.Data == nil {
 			continue
 		}
@@ -108,7 +109,7 @@ func extractTransferStoreInfoFromUserTx(userTx *api.UserTransaction) map[string]
 	return info
 }
 
-func extractTransferEventsFromUserTx(userTx *api.UserTransaction, storeInfo map[string]transferStoreMetadata, client *aptos.Client, version uint64) []TransferEvent {
+func extractTransferEventsFromUserTx(userTx *aptosapi.UserTransaction, storeInfo map[string]transferStoreMetadata, client *aptos.Client, version uint64) []TransferEvent {
 	var result []TransferEvent
 
 	for _, event := range userTx.Events {

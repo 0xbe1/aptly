@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/0xbe1/apt/pkg/api"
 	"github.com/aptos-labs/aptos-go-sdk"
 	"github.com/spf13/cobra"
 )
@@ -37,7 +38,7 @@ func runTrace(cmd *cobra.Command, args []string) error {
 
 	// If version, fetch transaction to get hash
 	if version, err := strconv.ParseUint(args[0], 10, 64); err == nil {
-		client, err := aptos.NewClient(aptos.MainnetConfig)
+		client, err := aptos.NewClient(api.GetNetworkConfig())
 		if err != nil {
 			return fmt.Errorf("failed to create client: %w", err)
 		}
