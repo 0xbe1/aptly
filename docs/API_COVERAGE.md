@@ -6,7 +6,10 @@ This document tracks the implementation status of Aptos Node API endpoints in th
 
 | Endpoint | Command | Status |
 |----------|---------|--------|
-| GET `/` | `apt ledger` | Done |
+| GET `/` | `apt node ledger` | Done |
+| GET `/spec.json` | `apt node spec` | Done |
+| GET `/-/healthy` | `apt node health` | Done |
+| GET `/info` | `apt node info` | Done |
 | GET `/accounts/{address}` | `apt account <address>` | Done |
 | GET `/accounts/{address}/resources` | `apt account resources <address>` | Done |
 | GET `/accounts/{address}/resource/{resource_type}` | `apt account resource <address> <type>` | Done |
@@ -30,8 +33,6 @@ This document tracks the implementation status of Aptos Node API endpoints in th
 
 | Endpoint | Reason |
 |----------|--------|
-| GET `/spec` | Browser-only (OpenAPI UI) |
-| GET `/-/healthy` | Infrastructure use, not agent use |
 | POST `/transactions/batch` | Batch submission rarely needed for agents |
 | GET `/estimate_gas_price` | Can be derived from recent transactions |
 
@@ -48,6 +49,22 @@ These commands provide value-added analysis not available in the raw API:
 | Stdin piping | All tx commands support `apt tx <ver> \| apt tx transfers` |
 
 ## Command Reference
+
+### Node Commands
+
+```bash
+# Get current ledger info
+apt node ledger
+
+# Get OpenAPI specification
+apt node spec
+
+# Check node health
+apt node health
+
+# Get node info
+apt node info
+```
 
 ### Account Commands
 
@@ -134,11 +151,4 @@ cat payload.json | apt tx simulate 0x1
 cat unsigned_tx.json | apt tx encode
 # Sign externally, then:
 cat signed_tx.json | apt tx submit
-```
-
-### Ledger Command
-
-```bash
-# Get current ledger info
-apt ledger
 ```
