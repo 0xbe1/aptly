@@ -6,7 +6,7 @@ import (
 	"github.com/0xbe1/apt/cmd/account"
 	"github.com/0xbe1/apt/cmd/block"
 	"github.com/0xbe1/apt/cmd/events"
-	"github.com/0xbe1/apt/cmd/ledger"
+	"github.com/0xbe1/apt/cmd/node"
 	"github.com/0xbe1/apt/cmd/table"
 	"github.com/0xbe1/apt/cmd/tx"
 	"github.com/0xbe1/apt/cmd/view"
@@ -30,7 +30,7 @@ func init() {
 	rootCmd.AddCommand(account.AccountCmd)
 	rootCmd.AddCommand(block.BlockCmd)
 	rootCmd.AddCommand(events.EventsCmd)
-	rootCmd.AddCommand(ledger.LedgerCmd)
+	rootCmd.AddCommand(node.NodeCmd)
 	rootCmd.AddCommand(table.TableCmd)
 	rootCmd.AddCommand(tx.TxCmd)
 	rootCmd.AddCommand(view.ViewCmd)
