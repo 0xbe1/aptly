@@ -1,0 +1,184 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-darwin-amd64:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Get version info
+        id: version
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+
+      - name: Build
+        run: |
+          go build -ldflags "-s -w \
+            -X github.com/0xbe1/aptly/cmd.Version=${{ steps.version.outputs.VERSION }} \
+            -X github.com/0xbe1/aptly/cmd.CommitSHA=${{ steps.version.outputs.COMMIT_SHA }} \
+            -X github.com/0xbe1/aptly/cmd.BuildDate=${{ steps.version.outputs.BUILD_DATE }}" \
+            -o aptly .
+
+      - name: Create archive
+        run: |
+          tar -czvf aptly_${{ steps.version.outputs.VERSION }}_darwin_amd64.tar.gz aptly
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aptly_darwin_amd64
+          path: aptly_${{ steps.version.outputs.VERSION }}_darwin_amd64.tar.gz
+
+  build-darwin-arm64:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Get version info
+        id: version
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+
+      - name: Build
+        run: |
+          go build -ldflags "-s -w \
+            -X github.com/0xbe1/aptly/cmd.Version=${{ steps.version.outputs.VERSION }} \
+            -X github.com/0xbe1/aptly/cmd.CommitSHA=${{ steps.version.outputs.COMMIT_SHA }} \
+            -X github.com/0xbe1/aptly/cmd.BuildDate=${{ steps.version.outputs.BUILD_DATE }}" \
+            -o aptly .
+
+      - name: Create archive
+        run: |
+          tar -czvf aptly_${{ steps.version.outputs.VERSION }}_darwin_arm64.tar.gz aptly
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aptly_darwin_arm64
+          path: aptly_${{ steps.version.outputs.VERSION }}_darwin_arm64.tar.gz
+
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Get version info
+        id: version
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+
+      - name: Build
+        env:
+          GOOS: linux
+          GOARCH: ${{ matrix.arch }}
+          CGO_ENABLED: 0
+        run: |
+          go build -ldflags "-s -w \
+            -X github.com/0xbe1/aptly/cmd.Version=${{ steps.version.outputs.VERSION }} \
+            -X github.com/0xbe1/aptly/cmd.CommitSHA=${{ steps.version.outputs.COMMIT_SHA }} \
+            -X github.com/0xbe1/aptly/cmd.BuildDate=${{ steps.version.outputs.BUILD_DATE }}" \
+            -o aptly .
+
+      - name: Create archive
+        run: |
+          tar -czvf aptly_${{ steps.version.outputs.VERSION }}_linux_${{ matrix.arch }}.tar.gz aptly
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aptly_linux_${{ matrix.arch }}
+          path: aptly_${{ steps.version.outputs.VERSION }}_linux_${{ matrix.arch }}.tar.gz
+
+  publish:
+    needs: [build-darwin-amd64, build-darwin-arm64, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+          find artifacts -name '*.tar.gz' -exec mv {} release/ \;
+          cd release
+          sha256sum *.tar.gz > checksums.txt
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            echo "## Changes since $PREV_TAG" > changelog.md
+            echo "" >> changelog.md
+            git log --pretty=format:"- %s" $PREV_TAG..HEAD >> changelog.md
+          else
+            echo "## Initial Release" > changelog.md
+          fi
+          echo "" >> changelog.md
+          echo "" >> changelog.md
+          echo "## Installation" >> changelog.md
+          echo "" >> changelog.md
+          echo "Download the appropriate archive for your platform and extract the binary:" >> changelog.md
+          echo "" >> changelog.md
+          echo '```bash' >> changelog.md
+          echo "# macOS (Apple Silicon)" >> changelog.md
+          echo "tar -xzf aptly_${GITHUB_REF_NAME}_darwin_arm64.tar.gz" >> changelog.md
+          echo "" >> changelog.md
+          echo "# macOS (Intel)" >> changelog.md
+          echo "tar -xzf aptly_${GITHUB_REF_NAME}_darwin_amd64.tar.gz" >> changelog.md
+          echo "" >> changelog.md
+          echo "# Linux (x86_64)" >> changelog.md
+          echo "tar -xzf aptly_${GITHUB_REF_NAME}_linux_amd64.tar.gz" >> changelog.md
+          echo "" >> changelog.md
+          echo "# Linux (ARM64)" >> changelog.md
+          echo "tar -xzf aptly_${GITHUB_REF_NAME}_linux_arm64.tar.gz" >> changelog.md
+          echo "" >> changelog.md
+          echo "# Move to your PATH" >> changelog.md
+          echo "sudo mv aptly /usr/local/bin/" >> changelog.md
+          echo '```' >> changelog.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: changelog.md
+          files: |
+            release/*.tar.gz
+            release/checksums.txt
