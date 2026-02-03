@@ -15,14 +15,17 @@ import (
 )
 
 var (
-	transfersLimit  uint64
-	transfersPretty bool
+	sendsLimit  uint64
+	sendsPretty bool
 )
 
-var transfersCmd = &cobra.Command{
-	Use:   "transfers <address>",
-	Short: "List asset transfers for an account",
-	Long: `Fetches and displays asset transfers for an account from the Aptos mainnet.
+var sendsCmd = &cobra.Command{
+	Use:   "sends <address>",
+	Short: "List outgoing asset transfers sent by an account",
+	Long: `Fetches and displays outgoing asset transfers sent by an account from the Aptos mainnet.
+
+Note: This only shows transactions where the account is the sender. Incoming transfers
+are not included because they are initiated by other accounts.
 
 Detects transfers from:
   - 0x1::aptos_account::transfer_coins
@@ -30,20 +33,16 @@ Detects transfers from:
   - 0x1::coin::transfer
 
 Examples:
-  aptly account transfers 0x1
-  aptly account transfers 0x1 --limit 10
-  aptly account transfers 0x1 --limit 5 --pretty
-
-Pretty output format:
-  123 → 0x2: 1.5 APT   (sent)
-  456 ← 0x2: 1.5 APT   (received)`,
+  aptly account sends 0x1
+  aptly account sends 0x1 --limit 10
+  aptly account sends 0x1 --limit 5 --pretty`,
 	Args: cobra.ExactArgs(1),
-	RunE: runTransfers,
+	RunE: runSends,
 }
 
 func init() {
-	transfersCmd.Flags().Uint64Var(&transfersLimit, "limit", 25, "Maximum number of transactions to fetch")
-	transfersCmd.Flags().BoolVar(&transfersPretty, "pretty", false, "Output in simple line format")
+	sendsCmd.Flags().Uint64Var(&sendsLimit, "limit", 25, "Maximum number of transactions to fetch")
+	sendsCmd.Flags().BoolVar(&sendsPretty, "pretty", false, "Output in simple line format")
 }
 
 // Transfer represents a single asset transfer
@@ -64,7 +63,7 @@ type assetMetadata struct {
 // metadataCache caches asset metadata to avoid repeated queries
 var metadataCache = make(map[string]assetMetadata)
 
-func runTransfers(cmd *cobra.Command, args []string) error {
+func runSends(cmd *cobra.Command, args []string) error {
 	client, err := aptos.NewClient(api.GetNetworkConfig())
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
@@ -77,7 +76,7 @@ func runTransfers(cmd *cobra.Command, args []string) error {
 
 	// Fetch transactions using SDK
 	start := uint64(0)
-	txs, err := client.AccountTransactions(addr, &start, &transfersLimit)
+	txs, err := client.AccountTransactions(addr, &start, &sendsLimit)
 	if err != nil {
 		return fmt.Errorf("failed to fetch transactions: %w", err)
 	}
@@ -95,8 +94,8 @@ func runTransfers(cmd *cobra.Command, args []string) error {
 	}
 
 	// Output
-	if transfersPretty {
-		printPrettyTransfers(transfers, addr.String())
+	if sendsPretty {
+		printPrettySends(transfers)
 		return nil
 	}
 
@@ -105,7 +104,7 @@ func runTransfers(cmd *cobra.Command, args []string) error {
 	return encoder.Encode(transfers)
 }
 
-func printPrettyTransfers(transfers []Transfer, address string) {
+func printPrettySends(transfers []Transfer) {
 	// Calculate max widths for alignment
 	maxAmountLen := 0
 	maxAssetLen := 0
@@ -118,15 +117,8 @@ func printPrettyTransfers(transfers []Transfer, address string) {
 		}
 	}
 
-	normalizedAddr := normalizeAddress(address)
 	for _, t := range transfers {
-		if normalizeAddress(t.From) == normalizedAddr {
-			// Sent
-			fmt.Printf("[%d] %*s %-*s → %s\n", t.Version, maxAmountLen, t.Amount, maxAssetLen, t.Asset, t.To)
-		} else {
-			// Received
-			fmt.Printf("[%d] %*s %-*s ← %s\n", t.Version, maxAmountLen, t.Amount, maxAssetLen, t.Asset, t.From)
-		}
+		fmt.Printf("[%d] %*s %-*s → %s\n", t.Version, maxAmountLen, t.Amount, maxAssetLen, t.Asset, t.To)
 	}
 }
 
@@ -357,14 +349,3 @@ func shortenAddr(addr string) string {
 	return addr
 }
 
-// normalizeAddress normalizes an address to full 64-char hex format for comparison
-func normalizeAddress(addr string) string {
-	if !strings.HasPrefix(addr, "0x") {
-		return addr
-	}
-	hex := strings.TrimPrefix(addr, "0x")
-	if len(hex) < 64 {
-		hex = strings.Repeat("0", 64-len(hex)) + hex
-	}
-	return "0x" + strings.ToLower(hex)
-}
