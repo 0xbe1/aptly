@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/0xbe1/aptly/cmd/account"
+	"github.com/0xbe1/aptly/cmd/address"
 	"github.com/0xbe1/aptly/cmd/block"
 	"github.com/0xbe1/aptly/cmd/events"
 	"github.com/0xbe1/aptly/cmd/node"
@@ -38,6 +39,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&rpcURL, "rpc-url", "", "Custom RPC URL (default: mainnet)")
 
 	rootCmd.AddCommand(account.AccountCmd)
+	rootCmd.AddCommand(address.AddressCmd)
 	rootCmd.AddCommand(block.BlockCmd)
 	rootCmd.AddCommand(events.EventsCmd)
 	rootCmd.AddCommand(node.NodeCmd)
