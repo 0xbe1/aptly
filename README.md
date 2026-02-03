@@ -82,3 +82,14 @@ apt view <function> --type-args <types> --args <json_args>
 | Events | `GET /accounts/{addr}/events/{num}` |
 | Table | `POST /tables/{handle}/item` |
 | View | `POST /view` |
+
+## Design
+
+### Direct HTTP vs SDK
+
+Commands use either direct HTTP calls or the [aptos-go-sdk](https://github.com/aptos-labs/aptos-go-sdk):
+
+- **Direct HTTP**: For commands that print API responses. Output matches the Aptos Node API exactly, ensuring reliable piping to tools like `jq`.
+- **SDK**: For commands that process response data (e.g., `apt tx balance-change` parses transaction events).
+
+This matters for agents: `raw_response != json.Marshal(sdk_struct)` due to field ordering, naming, and serialization differences. Direct HTTP guarantees output fidelity with Aptos API docs.
