@@ -15,4 +15,5 @@ func init() {
 	NodeCmd.AddCommand(specCmd)
 	NodeCmd.AddCommand(healthCmd)
 	NodeCmd.AddCommand(infoCmd)
+	NodeCmd.AddCommand(gasPriceCmd)
 }
