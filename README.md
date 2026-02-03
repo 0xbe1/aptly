@@ -5,6 +5,23 @@ Aptos CLI for agents.
 ## Installation
 
 ```bash
+# macOS (Apple Silicon)
+curl -sL https://github.com/0xbe1/aptly/releases/latest/download/aptly_darwin_arm64.tar.gz | tar xz
+sudo mv aptly /usr/local/bin/
+
+# macOS (Intel)
+curl -sL https://github.com/0xbe1/aptly/releases/latest/download/aptly_darwin_amd64.tar.gz | tar xz
+sudo mv aptly /usr/local/bin/
+
+# Linux (x86_64)
+curl -sL https://github.com/0xbe1/aptly/releases/latest/download/aptly_linux_amd64.tar.gz | tar xz
+sudo mv aptly /usr/local/bin/
+
+# Linux (ARM64)
+curl -sL https://github.com/0xbe1/aptly/releases/latest/download/aptly_linux_arm64.tar.gz | tar xz
+sudo mv aptly /usr/local/bin/
+
+# Or with Go
 go install github.com/0xbe1/aptly@latest
 ```
 
