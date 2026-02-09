@@ -730,7 +730,6 @@ fn format_amount(amount: &str, decimals: u8) -> String {
     let int_part = &raw / &divisor;
     let frac_part = &raw % &divisor;
     let mut frac_str = format!("{:0width$}", frac_part, width = decimals as usize);
-    frac_str.truncate(frac_str.len());
     while frac_str.ends_with('0') {
         frac_str.pop();
     }
