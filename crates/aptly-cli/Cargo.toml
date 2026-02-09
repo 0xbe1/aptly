@@ -1,0 +1,23 @@
+[package]
+name = "aptly-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "aptly"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+flate2.workspace = true
+hex.workspace = true
+num-bigint.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tempfile.workspace = true
+urlencoding.workspace = true
+aptly-aptos = { path = "../aptly-aptos" }
+aptly-plugin = { path = "../aptly-plugin" }
