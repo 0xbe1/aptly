@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Context, Result};
 use aptly_aptos::AptosClient;
-use aptly_core::{print_pretty_json, DEFAULT_RPC_URL};
 use aptly_plugin::{discover_move_decompiler, doctor_move_decompiler, run_move_decompiler};
 use clap::{Args, Parser, Subcommand};
 use flate2::read::GzDecoder;
@@ -17,6 +16,7 @@ use tempfile::tempdir;
 
 const LABELS_URL: &str =
     "https://raw.githubusercontent.com/ThalaLabs/aptos-labels/main/mainnet.json";
+const DEFAULT_RPC_URL: &str = "https://api.mainnet.aptoslabs.com/v1";
 const PACKAGE_REGISTRY_TYPE: &str = "0x1::code::PackageRegistry";
 const OBJECT_CORE_TYPE: &str = "0x1::object::ObjectCore";
 const FUNGIBLE_STORE_TYPE: &str = "0x1::fungible_asset::FungibleStore";
@@ -389,6 +389,12 @@ fn print_version() {
     println!("aptly-rs {version}");
     println!("commit: {commit_sha}");
     println!("built: {build_date}");
+}
+
+fn print_pretty_json(value: &Value) -> Result<()> {
+    let rendered = serde_json::to_string_pretty(value)?;
+    println!("{rendered}");
+    Ok(())
 }
 
 fn print_serialized<T: Serialize>(value: &T) -> Result<()> {
