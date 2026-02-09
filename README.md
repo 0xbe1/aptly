@@ -1,6 +1,6 @@
 # aptly
 
-Aptos CLI for agents, now Rust-native.
+The best way to interact with Aptos blockchain from your terminal. Built for both humans and AI agents — every command returns structured, parseable output that works seamlessly with LLMs and automation pipelines.
 
 ## Installation
 
