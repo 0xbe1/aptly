@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [[bin]]
-name = "aptly-rs"
+name = "aptly"
 path = "src/main.rs"
 
 [dependencies]

@@ -23,7 +23,7 @@ const FUNGIBLE_STORE_TYPE: &str = "0x1::fungible_asset::FungibleStore";
 const FUNGIBLE_METADATA_TYPE: &str = "0x1::fungible_asset::Metadata";
 
 #[derive(Parser)]
-#[command(name = "aptly-rs")]
+#[command(name = "aptly")]
 #[command(about = "Aptos CLI utilities in Rust")]
 struct Cli {
     #[arg(long, global = true, default_value = DEFAULT_RPC_URL)]
@@ -289,6 +289,8 @@ struct TxCommand {
 #[derive(Subcommand)]
 enum TxSubcommand {
     List(TxListArgs),
+    Encode,
+    Simulate(TxSimulateArgs),
     Submit,
     #[command(name = "balance-change")]
     BalanceChange(TxBalanceChangeArgs),
@@ -307,6 +309,11 @@ struct TxBalanceChangeArgs {
     version_or_hash: Option<String>,
     #[arg(long, default_value_t = false)]
     aggregate: bool,
+}
+
+#[derive(Args)]
+struct TxSimulateArgs {
+    sender: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -382,11 +389,11 @@ fn main() -> Result<()> {
 }
 
 fn print_version() {
-    let version = env!("CARGO_PKG_VERSION");
+    let version = option_env!("APTLY_VERSION").unwrap_or(env!("CARGO_PKG_VERSION"));
     let commit_sha = option_env!("APTLY_GIT_SHA").unwrap_or("unknown");
     let build_date = option_env!("APTLY_BUILD_DATE").unwrap_or("unknown");
 
-    println!("aptly-rs {version}");
+    println!("aptly {version}");
     println!("commit: {commit_sha}");
     println!("built: {build_date}");
 }
@@ -1119,6 +1126,8 @@ fn run_tx(client: &AptosClient, command: TxCommand) -> Result<()> {
             let value = client.get_json(&path)?;
             print_pretty_json(&value)
         }
+        (Some(TxSubcommand::Encode), _) => run_tx_encode(client),
+        (Some(TxSubcommand::Simulate(args)), _) => run_tx_simulate(client, &args),
         (Some(TxSubcommand::Submit), _) => {
             let reader = io::stdin();
             let txn: Value = serde_json::from_reader(reader.lock())
@@ -1138,6 +1147,103 @@ fn run_tx(client: &AptosClient, command: TxCommand) -> Result<()> {
         }
         (None, None) => Err(anyhow!("missing version/hash or subcommand")),
     }
+}
+
+fn run_tx_encode(client: &AptosClient) -> Result<()> {
+    let reader = io::stdin();
+    let txn: Value = serde_json::from_reader(reader.lock())
+        .context("failed to parse unsigned transaction JSON from stdin")?;
+    let encoded = client.post_json("/transactions/encode_submission", &txn)?;
+    print_pretty_json(&encoded)
+}
+
+fn run_tx_simulate(client: &AptosClient, args: &TxSimulateArgs) -> Result<()> {
+    let stdin_value = read_json_from_stdin("failed to parse payload JSON from stdin")?;
+    let payload = normalize_simulation_payload(&stdin_value)?;
+
+    let account = client
+        .get_json(&format!("/accounts/{}", args.sender))
+        .context("failed to fetch sender account")?;
+    let sequence_number = get_nested_string(&account, &["sequence_number"]);
+    if sequence_number.is_empty() {
+        return Err(anyhow!("failed to resolve sender sequence number"));
+    }
+
+    let gas_price = client
+        .get_json("/estimate_gas_price")
+        .context("failed to fetch gas price estimate")?;
+    let gas_unit_price = first_non_empty_string(&[
+        get_nested_string(&gas_price, &["gas_estimate"]),
+        get_nested_string(&gas_price, &["gas_unit_price"]),
+    ])
+    .unwrap_or_else(|| "100".to_owned());
+
+    let ledger = client
+        .get_json("/")
+        .context("failed to fetch ledger info for expiration")?;
+    let ledger_timestamp_micros = parse_u64(ledger.get("ledger_timestamp").unwrap_or(&Value::Null))
+        .ok_or_else(|| anyhow!("failed to parse ledger timestamp"))?;
+    let expiration_timestamp_secs = (ledger_timestamp_micros / 1_000_000 + 600).to_string();
+
+    let simulate_request = json!({
+        "sender": args.sender,
+        "sequence_number": sequence_number,
+        "max_gas_amount": "200000",
+        "gas_unit_price": gas_unit_price,
+        "expiration_timestamp_secs": expiration_timestamp_secs,
+        "payload": payload,
+        "signature": {"type": "no_account_signature"}
+    });
+
+    let response = client
+        .post_json("/transactions/simulate", &simulate_request)
+        .context("failed to simulate transaction")?;
+
+    if let Some(first) = response.as_array().and_then(|arr| arr.first()) {
+        return print_pretty_json(first);
+    }
+
+    print_pretty_json(&response)
+}
+
+fn read_json_from_stdin(error_message: &str) -> Result<Value> {
+    let reader = io::stdin();
+    serde_json::from_reader(reader.lock()).context(error_message.to_owned())
+}
+
+fn normalize_simulation_payload(input: &Value) -> Result<Value> {
+    if let Some(payload) = input.get("payload") {
+        return Ok(payload.clone());
+    }
+
+    if input.get("type").is_some() {
+        return Ok(input.clone());
+    }
+
+    let function = get_nested_string(input, &["function"]);
+    if function.is_empty() {
+        return Err(anyhow!(
+            "payload must contain either `payload`, `type`, or `function` fields"
+        ));
+    }
+
+    let type_arguments = input
+        .get("type_arguments")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let arguments = input
+        .get("arguments")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+
+    Ok(json!({
+        "type": "entry_function_payload",
+        "function": function,
+        "type_arguments": type_arguments,
+        "arguments": arguments
+    }))
 }
 
 fn run_tx_balance_change(client: &AptosClient, args: &TxBalanceChangeArgs) -> Result<()> {
@@ -1440,6 +1546,10 @@ fn parse_u64(value: &Value) -> Option<u64> {
 fn parse_bigint(value: &Value) -> BigInt {
     let string_value = value_to_string(value);
     BigInt::from_str(&string_value).unwrap_or_else(|_| BigInt::from(0))
+}
+
+fn first_non_empty_string(values: &[String]) -> Option<String> {
+    values.iter().find(|value| !value.is_empty()).cloned()
 }
 
 fn value_to_string(value: &Value) -> String {

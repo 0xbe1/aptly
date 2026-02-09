@@ -133,7 +133,7 @@ pub fn run_move_decompiler(explicit_bin: Option<&str>, args: &[String]) -> Resul
 
     if args.is_empty() {
         return Err(anyhow!(
-            "missing move-decompiler arguments. Pass args after `--`, e.g. `aptly-rs decompile -- --help`"
+            "missing move-decompiler arguments. Pass args after `--`, e.g. `aptly decompile raw -- --help`"
         ));
     }
 

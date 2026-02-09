@@ -6,6 +6,20 @@
 - `aptos-rust-sdk` can replace most direct `aptos-go-sdk` usage.
 - The current product is mostly a CLI wrapper over Aptos Node API, with a small set of value-add analytics commands.
 
+## Status (as of 2026-02-09)
+
+- Rust is now the active implementation.
+- Go code has been removed from this repository.
+- Implemented in Rust:
+  - thin API wrappers (`node`, `account`, `block`, `events`, `table`, `view`, `tx`)
+  - value-add commands (`address`, `account source-code`, `account sends`, `tx balance-change`)
+  - `tx encode` and `tx simulate`
+  - optional `move-decompiler` plugin wrappers:
+    - `decompile raw`
+    - `decompile module <address> <module>`
+    - `decompile address <address>`
+- `tx trace` is intentionally deferred for now.
+
 ## Scope
 
 ### In scope (v1 parity + near-term roadmap)
@@ -17,7 +31,7 @@
   - `account sends`
   - `address`
   - `tx balance-change`
-- Keep `tx trace` via Sentio initially behind a provider abstraction.
+- Defer `tx trace` until after core migration stabilizes.
 - Add plugin architecture for optional `decompile` command, backed by Aptos
   `move-decompiler`:
   `https://github.com/aptos-labs/aptos-core/blob/main/third_party/move/tools/move-decompiler`.
@@ -30,8 +44,8 @@
 
 ## Current command surface (to preserve)
 
-- Thin API wrappers: `node`, `account`, `block`, `events`, `table`, `view`, basic `tx` fetch/list/submit/simulate.
-- Value-add commands: `account source-code`, `account sends`, `address`, `tx balance-change`, `tx graph`, `tx trace`.
+- Thin API wrappers: `node`, `account`, `block`, `events`, `table`, `view`, basic `tx` fetch/list/submit/simulate/encode.
+- Value-add commands: `account source-code`, `account sends`, `address`, `tx balance-change`, `decompile`.
 
 ## Target Rust architecture
 
@@ -42,11 +56,7 @@ aptly/
   Cargo.toml (workspace)
   crates/
     aptly-cli/              # clap command definitions and output formatting
-    aptly-core/             # shared domain types, errors, helpers
     aptly-aptos/            # aptos-rust-sdk + node API adapter layer
-    aptly-analytics/        # sends / balance-change / graph logic
-    aptly-trace/            # TraceProvider trait + models
-    aptly-trace-sentio/     # Sentio implementation (default provider)
     aptly-plugin/           # plugin discovery/execution utilities
 ```
 
@@ -94,11 +104,10 @@ aptly/
   - transfer store owner/asset resolution from tx changes with fallback resource reads
 - Preserve `--aggregate` contract.
 
-#### `tx trace`
+#### `tx trace` (deferred)
 
-- Create `TraceProvider` trait in `aptly-trace`.
-- Implement Sentio provider in `aptly-trace-sentio` (default in v1).
-- Future provider: in-house Rust trace library implementing same trait.
+- Keep this out of immediate migration scope.
+- Revisit after command parity and release tooling are fully stabilized.
 
 ## Plugin plan (`decompile`)
 
@@ -129,37 +138,35 @@ The backend decompiler is Aptos `move-decompiler` from:
 - Freeze output contracts for commands relied on by agents/pipes.
 - Record fixture inputs/expected JSON for value-add commands.
 
-## Phase 1: Workspace bootstrap + plain wrappers (1-2 weeks)
+## Phase 1: Workspace bootstrap + plain wrappers (done)
 
 - Scaffold Rust workspace and CI.
 - Implement global flags (`--rpc-url`) and root command tree.
 - Port thin wrapper commands first.
-- Ship `aptly-rs` preview binary for internal use.
+- Ship Rust `aptly` binary.
 
-## Phase 2: Value-add command ports (2 weeks)
+## Phase 2: Value-add command ports (done)
 
 - Port `account source-code`, `account sends`, `address`, `tx balance-change`.
-- Port `tx graph` (shares balance-change/store metadata helpers).
 - Add fixture-driven integration tests + snapshot outputs.
+- Add `tx encode` and `tx simulate` parity support.
 
-## Phase 3: Trace provider abstraction (1 week)
+## Phase 3: Trace provider abstraction (deferred)
 
-- Implement `TraceProvider` + Sentio provider.
-- Keep command UX compatible with current `tx trace`.
-- Add config point for provider selection (default `sentio`).
+- Deferred by product decision for now.
 
-## Phase 4: Decompile plugin (1-2 weeks)
+## Phase 4: Decompile plugin (done)
 
 - Add plugin discovery and dependency checks.
 - Implement first `decompile` adapter to Aptos `move-decompiler`
   (`aptos-core/third_party/move/tools/move-decompiler`).
 - Document install steps and failure diagnostics.
 
-## Phase 5: Cutover + deprecation (1 week)
+## Phase 5: Cutover + deprecation (done)
 
 - Publish Rust binary as `aptly`.
-- Keep Go implementation on maintenance branch for rollback window.
-- Announce compatibility notes and migration guidance.
+- Remove Go code from this repository.
+- Update release/install docs and workflows to Rust.
 
 ## CI/CD and packaging changes
 
@@ -191,12 +198,12 @@ The backend decompiler is Aptos `move-decompiler` from:
 
 ## Deliverables checklist
 
-- [ ] Rust workspace with command parity baseline
-- [ ] Ported value-add commands (`source-code`, `sends`, `address`, `balance-change`)
-- [ ] Trace provider abstraction + Sentio provider
-- [ ] Optional decompile plugin integration
-- [ ] Updated release workflow and install path
-- [ ] Migration guide (`Go -> Rust`) and compatibility notes
+- [x] Rust workspace with command parity baseline
+- [x] Ported value-add commands (`source-code`, `sends`, `address`, `balance-change`)
+- [ ] Trace provider abstraction + Sentio provider (deferred)
+- [x] Optional decompile plugin integration
+- [x] Updated release workflow and install path
+- [x] Migration guide and compatibility notes
 
 ## Suggested rollout decision points
 
