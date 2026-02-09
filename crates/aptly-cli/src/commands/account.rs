@@ -9,6 +9,8 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::str::FromStr;
 
+use crate::commands::common::{get_nested_string, parse_u64, shorten_addr, value_to_string};
+
 const PACKAGE_REGISTRY_TYPE: &str = "0x1::code::PackageRegistry";
 const FUNGIBLE_METADATA_TYPE: &str = "0x1::fungible_asset::Metadata";
 
@@ -516,44 +518,9 @@ fn print_pretty_sends(transfers: &[Transfer]) {
     }
 }
 
-fn parse_u64(value: &Value) -> Option<u64> {
-    match value {
-        Value::String(s) => s.parse::<u64>().ok(),
-        Value::Number(n) => n.as_u64(),
-        _ => None,
-    }
-}
-
-fn value_to_string(value: &Value) -> String {
-    match value {
-        Value::String(s) => s.clone(),
-        Value::Number(n) => n.to_string(),
-        _ => String::new(),
-    }
-}
-
 fn get_inner_or_string(value: &Value) -> String {
     if let Some(inner) = value.get("inner").and_then(Value::as_str) {
         return inner.to_owned();
     }
     value_to_string(value)
-}
-
-fn get_nested_string(value: &Value, keys: &[&str]) -> String {
-    let mut current = value;
-    for key in keys {
-        let Some(next) = current.get(*key) else {
-            return String::new();
-        };
-        current = next;
-    }
-    value_to_string(current)
-}
-
-fn shorten_addr(value: &str) -> String {
-    if value.len() > 12 {
-        format!("{}...{}", &value[..6], &value[value.len() - 4..])
-    } else {
-        value.to_owned()
-    }
 }

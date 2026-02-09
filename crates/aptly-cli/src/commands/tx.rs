@@ -8,6 +8,8 @@ use std::collections::HashMap;
 use std::io::{self, IsTerminal, Read};
 use std::str::FromStr;
 
+use crate::commands::common::{get_nested_string, parse_u64, value_to_string};
+
 const OBJECT_CORE_TYPE: &str = "0x1::object::ObjectCore";
 const FUNGIBLE_STORE_TYPE: &str = "0x1::fungible_asset::FungibleStore";
 
@@ -213,10 +215,10 @@ fn run_tx_balance_change(client: &AptosClient, args: &TxBalanceChangeArgs) -> Re
 
     if args.aggregate {
         let aggregated = aggregate_events(&events);
-        return print_serialized(&aggregated);
+        return crate::print_serialized(&aggregated);
     }
 
-    print_serialized(&events)
+    crate::print_serialized(&events)
 }
 
 fn get_transaction(client: &AptosClient, version_or_hash: Option<&str>) -> Result<Value> {
@@ -490,14 +492,6 @@ fn aggregate_events(events: &[BalanceChange]) -> Vec<AggregatedBalanceChange> {
         .collect()
 }
 
-fn parse_u64(value: &Value) -> Option<u64> {
-    match value {
-        Value::String(s) => s.parse::<u64>().ok(),
-        Value::Number(n) => n.as_u64(),
-        _ => None,
-    }
-}
-
 fn parse_bigint(value: &Value) -> BigInt {
     let string_value = value_to_string(value);
     BigInt::from_str(&string_value).unwrap_or_else(|_| BigInt::from(0))
@@ -505,28 +499,4 @@ fn parse_bigint(value: &Value) -> BigInt {
 
 fn first_non_empty_string(values: &[String]) -> Option<String> {
     values.iter().find(|value| !value.is_empty()).cloned()
-}
-
-fn value_to_string(value: &Value) -> String {
-    match value {
-        Value::String(s) => s.clone(),
-        Value::Number(n) => n.to_string(),
-        _ => String::new(),
-    }
-}
-
-fn get_nested_string(value: &Value, keys: &[&str]) -> String {
-    let mut current = value;
-    for key in keys {
-        let Some(next) = current.get(*key) else {
-            return String::new();
-        };
-        current = next;
-    }
-    value_to_string(current)
-}
-
-fn print_serialized<T: Serialize>(value: &T) -> Result<()> {
-    let json_value = serde_json::to_value(value)?;
-    crate::print_pretty_json(&json_value)
 }

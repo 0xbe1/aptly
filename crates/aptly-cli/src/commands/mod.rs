@@ -1,6 +1,7 @@
 pub(crate) mod account;
 pub(crate) mod address;
 pub(crate) mod block;
+pub(crate) mod common;
 pub(crate) mod decompile;
 pub(crate) mod events;
 pub(crate) mod node;
