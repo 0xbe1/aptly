@@ -1,0 +1,17 @@
+[package]
+name = "aptly-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "aptly-rs"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+serde_json.workspace = true
+urlencoding.workspace = true
+aptly-core = { path = "../aptly-core" }
+aptly-aptos = { path = "../aptly-aptos" }
