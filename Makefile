@@ -1,4 +1,4 @@
-.PHONY: build release-patch release-minor release-major clean
+.PHONY: build install release-patch release-minor release-major clean
 
 BINARY := aptly
 COMMIT_SHA := $(shell git rev-parse --short HEAD)
@@ -11,6 +11,9 @@ build:
 	APTLY_BUILD_DATE=$(BUILD_DATE) \
 	cargo build -p aptly-cli --release --bin $(BINARY)
 	cp target/release/$(BINARY) ./$(BINARY)
+
+install:
+	cargo install --path crates/aptly-cli
 
 release-patch:
 	cargo release patch --execute
