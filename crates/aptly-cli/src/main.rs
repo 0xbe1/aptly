@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 use aptly_aptos::AptosClient;
 use aptly_core::{print_pretty_json, DEFAULT_RPC_URL};
+use aptly_plugin::{discover_move_decompiler, doctor_move_decompiler, run_move_decompiler};
 use clap::{Args, Parser, Subcommand};
 use flate2::read::GzDecoder;
 use num_bigint::BigInt;
@@ -34,6 +35,8 @@ enum Command {
     Node(NodeCommand),
     Account(AccountCommand),
     Address(AddressCommand),
+    Plugin(PluginCommand),
+    Decompile(DecompileCommand),
     Block(BlockCommand),
     Events(EventsCommand),
     Table(TableCommand),
@@ -136,6 +139,32 @@ struct SourceCodeArgs {
 #[derive(Args)]
 struct AddressCommand {
     query: String,
+}
+
+#[derive(Args)]
+struct PluginCommand {
+    #[command(subcommand)]
+    command: PluginSubcommand,
+}
+
+#[derive(Subcommand)]
+enum PluginSubcommand {
+    List,
+    Doctor(PluginDoctorArgs),
+}
+
+#[derive(Args)]
+struct PluginDoctorArgs {
+    #[arg(long = "decompiler-bin")]
+    decompiler_bin: Option<String>,
+}
+
+#[derive(Args)]
+struct DecompileCommand {
+    #[arg(long = "decompiler-bin")]
+    decompiler_bin: Option<String>,
+    #[arg(trailing_var_arg = true, allow_hyphen_values = true, num_args = 0..)]
+    args: Vec<String>,
 }
 
 #[derive(Args)]
@@ -279,22 +308,24 @@ struct TransferStoreMetadata {
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    if let Command::Version = cli.command {
-        print_version();
-        return Ok(());
-    }
-
-    let client = AptosClient::new(&cli.rpc_url)?;
     match cli.command {
-        Command::Node(command) => run_node(&client, command)?,
-        Command::Account(command) => run_account(&client, command)?,
-        Command::Address(command) => run_address(command)?,
-        Command::Block(command) => run_block(&client, command)?,
-        Command::Events(command) => run_events(&client, command)?,
-        Command::Table(command) => run_table(&client, command)?,
-        Command::View(command) => run_view(&client, command)?,
-        Command::Tx(command) => run_tx(&client, command)?,
-        Command::Version => {}
+        Command::Version => print_version(),
+        Command::Plugin(command) => run_plugin(command)?,
+        Command::Decompile(command) => run_decompile(command)?,
+        command => {
+            let client = AptosClient::new(&cli.rpc_url)?;
+            match command {
+                Command::Node(command) => run_node(&client, command)?,
+                Command::Account(command) => run_account(&client, command)?,
+                Command::Address(command) => run_address(command)?,
+                Command::Block(command) => run_block(&client, command)?,
+                Command::Events(command) => run_events(&client, command)?,
+                Command::Table(command) => run_table(&client, command)?,
+                Command::View(command) => run_view(&client, command)?,
+                Command::Tx(command) => run_tx(&client, command)?,
+                Command::Plugin(_) | Command::Decompile(_) | Command::Version => unreachable!(),
+            }
+        }
     }
 
     Ok(())
@@ -411,6 +442,31 @@ fn run_address(command: AddressCommand) -> Result<()> {
         .collect();
 
     print_serialized(&matches)
+}
+
+fn run_plugin(command: PluginCommand) -> Result<()> {
+    match command.command {
+        PluginSubcommand::List => {
+            let plugins = vec![discover_move_decompiler(None)];
+            print_serialized(&plugins)
+        }
+        PluginSubcommand::Doctor(args) => {
+            let report = doctor_move_decompiler(args.decompiler_bin.as_deref());
+            let ok = report.all_ok();
+            print_serialized(&report)?;
+            if ok {
+                Ok(())
+            } else {
+                Err(anyhow!(
+                    "plugin doctor found issues; see install_hint for remediation"
+                ))
+            }
+        }
+    }
+}
+
+fn run_decompile(command: DecompileCommand) -> Result<()> {
+    run_move_decompiler(command.decompiler_bin.as_deref(), &command.args)
 }
 
 fn run_account_source_code(client: &AptosClient, args: &SourceCodeArgs) -> Result<()> {

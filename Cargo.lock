@@ -84,6 +84,7 @@ dependencies = [
  "anyhow",
  "aptly-aptos",
  "aptly-core",
+ "aptly-plugin",
  "clap",
  "flate2",
  "hex",
@@ -105,6 +106,10 @@ dependencies = [
 [[package]]
 name = "aptly-plugin"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+]
 
 [[package]]
 name = "aptly-trace"

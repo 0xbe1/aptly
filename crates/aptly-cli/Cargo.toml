@@ -20,3 +20,4 @@ serde_json.workspace = true
 urlencoding.workspace = true
 aptly-core = { path = "../aptly-core" }
 aptly-aptos = { path = "../aptly-aptos" }
+aptly-plugin = { path = "../aptly-plugin" }

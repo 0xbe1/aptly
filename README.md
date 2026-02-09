@@ -36,6 +36,28 @@ aptly node ledger
 aptly --rpc-url https://rpc.sentio.xyz/aptos/v1 node ledger
 ```
 
+## Rust Preview (WIP)
+
+The Rust migration currently ships as `aptly-rs` via Cargo:
+
+```bash
+# General smoke check
+cargo run -q -p aptly-cli -- node ledger
+
+# Plugin discovery for optional move-decompiler integration
+cargo run -q -p aptly-cli -- plugin list
+cargo run -q -p aptly-cli -- plugin doctor
+
+# Run the decompiler plugin (pass args through to move-decompiler)
+cargo run -q -p aptly-cli -- decompile -- --help
+```
+
+If `move-decompiler` is not on your `PATH`, set:
+
+```bash
+export APTLY_MOVE_DECOMPILER_BIN=/path/to/move-decompiler
+```
+
 ## The Fun Parts
 
 Analyze transactions with derived insights:
