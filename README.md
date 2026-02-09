@@ -48,8 +48,14 @@ cargo run -q -p aptly-cli -- node ledger
 cargo run -q -p aptly-cli -- plugin list
 cargo run -q -p aptly-cli -- plugin doctor
 
-# Run the decompiler plugin (pass args through to move-decompiler)
-cargo run -q -p aptly-cli -- decompile -- --help
+# Decompile all modules under an account address
+cargo run -q -p aptly-cli -- decompile address 0x1
+
+# Decompile one module under an address
+cargo run -q -p aptly-cli -- decompile module 0x1 coin
+
+# Raw passthrough to move-decompiler
+cargo run -q -p aptly-cli -- decompile raw -- --help
 ```
 
 If `move-decompiler` is not on your `PATH`, set:
@@ -57,6 +63,8 @@ If `move-decompiler` is not on your `PATH`, set:
 ```bash
 export APTLY_MOVE_DECOMPILER_BIN=/path/to/move-decompiler
 ```
+
+Wrapper output defaults to `decompiled/<address>/`.
 
 ## The Fun Parts
 

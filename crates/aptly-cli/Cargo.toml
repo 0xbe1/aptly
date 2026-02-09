@@ -17,6 +17,7 @@ num-bigint.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+tempfile.workspace = true
 urlencoding.workspace = true
 aptly-core = { path = "../aptly-core" }
 aptly-aptos = { path = "../aptly-aptos" }
