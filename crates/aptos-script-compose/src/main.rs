@@ -18,7 +18,7 @@ use std::{
     str::FromStr,
 };
 
-const DEFAULT_RPC_URL: &str = "https://api.mainnet.aptoslabs.com/v1";
+const DEFAULT_RPC_URL: &str = "https://rpc.sentio.xyz/aptos/v1";
 
 #[derive(Parser)]
 #[command(
