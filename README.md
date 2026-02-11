@@ -1,28 +1,11 @@
 # aptly
 
-The best way to interact with Aptos blockchain from your terminal. Built for both humans and AI agents — every command returns structured, parseable output that works seamlessly with LLMs and automation pipelines.
+Best Aptos CLI for agents.
 
 ## Installation
 
 ```bash
-# Install latest release binary (macOS/Linux)
 curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install.sh | sh
-```
-
-From source:
-
-```bash
-cargo install --path crates/aptly-cli --bin aptly
-```
-
-## Claude Code Integration
-
-```bash
-# 1) Install aptly
-curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install.sh | sh
-
-# 2) Install Claude Code skill
-curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-skill.sh | sh
 ```
 
 ## Usage
@@ -35,120 +18,133 @@ aptly node ledger
 aptly --rpc-url https://rpc.sentio.xyz/aptos/v1 node ledger
 ```
 
-## Value-add Commands
+## Fun Commands
 
 ```bash
-# Address labels
-aptly address thala
+$ aptly address thala
+{
+  "0x007730cd28ee1cdc9e999336cbc430f99e7c44397c0aa77516f6f23a78559bb5": "ThalaSwap v2",
+  "0x075b4890de3e312d9425408c43d9a9752b64ab3562a30e89a55bdc568c645920": "ThalaSwap CL",
+  "0x48271d39d0b05bd6efca2278f22277d6fcc375504f9839fd73f74ace240861af": "ThalaSwap v1",
+  "0x60955b957956d79bc80b096d3e41bad525dd400d8ce957cdeb05719ed1e4fc26": "Thala router",
+  "0x6b3720cd988adeaf721ed9d4730da4324d52364871a68eac62b46d21e4d2fa99": "Thala Farm",
+  "0x6f986d146e4a90b828d8c12c14b6f4e003fdff11a8eecceceb63744363eaac01": "Thala CDP",
+  "0xcb8365dc9f7ac6283169598aaad7db9c7b12f52da127007f37fa4565170ff59c": "ThalaSwap CL Farm",
+  "0xfaf4e633ae9eb31366c9ca24214231760926576c7b625313b3688b5e900731f6": "Thala LSD"
+}
 
-# Account source code (if published with metadata)
-aptly account source-code <address> [module_name] [--package <name>] [--raw]
+$ aptly account source-code 0x1 chain_id --raw | head -n 20
+/// The chain id distinguishes between different chains (e.g., testnet and the main network).
+/// One important role is to prevent transactions intended for one chain from being executed on another.
+/// This code provides a container for storing a chain id and functions to initialize and get it.
+module aptos_framework::chain_id {
+    use aptos_framework::system_addresses;
 
-# If source metadata is unavailable, decompile bytecode instead
-aptly decompile address <address>
-aptly decompile module <address> <module_name>
+    friend aptos_framework::genesis;
 
-# Outgoing sends from an account
-aptly account sends <address> --limit 25 [--pretty]
+    struct ChainId has key {
+        id: u8
+    }
 
-# Balance changes from tx (supports stdin piping)
-aptly tx balance-change <version_or_hash> [--aggregate]
-aptly tx <version_or_hash> | aptly tx balance-change --aggregate
+    /// Only called during genesis.
+    /// Publish the chain ID `id` of this instance under the SystemAddresses address
+    public(friend) fun initialize(aptos_framework: &signer, id: u8) {
+        system_addresses::assert_aptos_framework(aptos_framework);
+        move_to(aptos_framework, ChainId { id })
+    }
+
+    #[view]
+
+$ aptly decompile module 0x1 chain_id && cat decompiled/0x1/chain_id.move
+module 0x1::chain_id {
+    use 0x1::system_addresses;
+    friend 0x1::genesis;
+    struct ChainId has key {
+        id: u8,
+    }
+    public fun get(): u8
+        acquires ChainId
+    {
+        *&borrow_global<ChainId>(@0x1).id
+    }
+    friend fun initialize(p0: &signer, p1: u8) {
+        system_addresses::assert_aptos_framework(p0);
+        let _v0 = ChainId{id: p1};
+        move_to<ChainId>(p0, _v0);
+    }
+}
+
+$ aptly tx balance-change 4300326632 --aggregate
+[
+  {
+    "account": "0x623d5561daf5a4cdcd234b0f9343016c53012236fe2e0926e1d2f7251191c33",
+    "amount": "1034475000",
+    "asset": "0xa"
+  },
+  {
+    "account": "0x623d5561daf5a4cdcd234b0f9343016c53012236fe2e0926e1d2f7251191c33",
+    "amount": "-9960666",
+    "asset": "0xbae207659db88bea0cbead6da0ed00aac12edcdda169e591cd41c94180b46f3b"
+  },
+  {
+    "account": "0x75b4890de3e312d9425408c43d9a9752b64ab3562a30e89a55bdc568c645920",
+    "amount": "2490",
+    "asset": "0xbae207659db88bea0cbead6da0ed00aac12edcdda169e591cd41c94180b46f3b"
+  },
+  {
+    "account": "0xa8a355df7d9e75ef16082da2a0bad62c173a054ab1e8eae0f0e26c828adaa4ef",
+    "amount": "9958176",
+    "asset": "0xbae207659db88bea0cbead6da0ed00aac12edcdda169e591cd41c94180b46f3b"
+  },
+  {
+    "account": "0xa8a355df7d9e75ef16082da2a0bad62c173a054ab1e8eae0f0e26c828adaa4ef",
+    "amount": "-1034482800",
+    "asset": "0xa"
+  }
+]
+
+$ aptly tx trace 0xf44b2ea4a0cd55a31559fc022a2fba12aa81c46dcfce31a050d9d42d93a7dae5 | jq -r '
+    def show($d):
+      (("  " * $d) + (.contractName + "::" + .functionName)),
+      (if $d < 2 then .calls[]? | show($d+1) else empty end);
+    show(0)
+  '
+primary_fungible_store::primary_fungible_store::transfer
+  transaction_arg_validation::transaction_arg_validation::validate_combine_signer_and_txn_args
+    object::object::address_to_object
+  primary_fungible_store::object::object_address
+  primary_fungible_store::object::create_user_derived_object_address
+  primary_fungible_store::fungible_asset::store_exists
+  primary_fungible_store::object::address_to_object
+  primary_fungible_store::object::is_burnt
+  primary_fungible_store::object::object_address
+  primary_fungible_store::object::create_user_derived_object_address
+  primary_fungible_store::fungible_asset::store_exists
+  primary_fungible_store::object::address_to_object
+  primary_fungible_store::dispatchable_fungible_asset::withdraw
+    dispatchable_fungible_asset::fungible_asset::withdraw_sanity_check
+    dispatchable_fungible_asset::fungible_asset::withdraw_permission_check
+    dispatchable_fungible_asset::fungible_asset::withdraw_dispatch_function
+    dispatchable_fungible_asset::option::is_some
+    dispatchable_fungible_asset::option::borrow
+    dispatchable_fungible_asset::function_info::load_module_from_function
+    dispatchable_fungible_asset::fungible_asset::store_metadata
+    dispatchable_fungible_asset::object::object_address
+    dispatchable_fungible_asset::usdt::withdraw
+  primary_fungible_store::dispatchable_fungible_asset::deposit
+    dispatchable_fungible_asset::fungible_asset::deposit_sanity_check
+    dispatchable_fungible_asset::fungible_asset::deposit_dispatch_function
+    dispatchable_fungible_asset::option::is_some
+    dispatchable_fungible_asset::option::borrow
+    dispatchable_fungible_asset::function_info::load_module_from_function
+    dispatchable_fungible_asset::fungible_asset::store_metadata
+    dispatchable_fungible_asset::object::object_address
+    dispatchable_fungible_asset::usdt::deposit
 ```
 
-## Decompile Plugin (`move-decompiler`)
+## Boring Commands
 
-`aptly` integrates with Aptos `move-decompiler` as an optional plugin.
-Use decompile as the default fallback whenever `aptly account source-code` cannot return source.
-
-```bash
-# Check plugin installation
-aptly plugin list
-aptly plugin doctor
-
-# Decompile all modules under an address
-aptly decompile address 0x1
-
-# Decompile one module
-aptly decompile module 0x1 coin
-
-# Raw passthrough to move-decompiler
-aptly decompile raw -- --help
-```
-
-Binary resolution order for `aptly decompile` is:
-1. `--decompiler-bin /path/to/move-decompiler` (if provided)
-2. `PATH` (`move-decompiler`)
-
-Default wrapper output: `decompiled/<address>/`
-
-## Script Compose Plugin (`aptos-script-compose`)
-
-`aptly` can discover `aptos-script-compose` as an external plugin binary.
-The binary wraps Aptos `script-composer` and compiles batched call payload JSON from stdin.
-
-```bash
-# Check plugin installation
-aptly plugin list
-aptly plugin doctor --script-compose-bin /path/to/aptos-script-compose
-
-# Compose batched script payload from stdin and print raw 0x-hex serialized Script bytes
-cat compose_payload.json | aptos-script-compose --rpc-url https://rpc.sentio.xyz/aptos/v1
-
-# Emit a JSON payload directly consumable by aptly tx simulate / submit
-cat compose_payload.json \
-  | aptos-script-compose --rpc-url https://rpc.sentio.xyz/aptos/v1 --emit-script-payload \
-  | aptly tx simulate <sender>
-```
-
-Binary resolution order for `aptos-script-compose` plugin checks:
-1. `--script-compose-bin /path/to/aptos-script-compose` (for `aptly plugin doctor`)
-2. `PATH` (`aptos-script-compose`)
-
-## Trace API (Sentio)
-
-`aptly tx trace` queries Sentio's hosted trace API at `https://app.sentio.xyz`.
-Network ID is auto-detected from the selected `--rpc-url` (for example, Aptos mainnet `1`
-or Movement mainnet `126`).
-Default hosted tracing is usually much faster. Try local mode only when your RPC is very fast
-(for example, a self-hosted node).
-
-```bash
-# Option 1: Sentio hosted API (default)
-aptly tx trace <tx_version_or_hash>
-
-# Option 2: local aptos-tracer binary
-aptly tx trace <tx_version_or_hash> --local-tracer
-
-# Optional: pin a specific local binary path
-aptly tx trace <tx_version_or_hash> --local-tracer /path/to/aptos-tracer
-```
-
-For `--local-tracer`, binary resolution order is:
-1. `--local-tracer /path/to/aptos-tracer` (if provided)
-2. `PATH` (`aptos-tracer`)
-
-## Transaction Helpers
-
-```bash
-# Basic transaction fetch/list
-aptly tx <version_or_hash>
-aptly tx list --limit 10
-
-# Encode unsigned transaction for external signing
-cat unsigned_tx.json | aptly tx encode
-
-# Simulate entry function payload from stdin (no private key required)
-cat payload.json | aptly tx simulate <sender>
-
-# Trace transaction call tree (Sentio API)
-aptly tx trace <version_or_hash>
-
-# Submit signed transaction JSON
-cat signed_tx.json | aptly tx submit
-```
-
-## Thin wrappers over Aptos Node API
+Thin wrappers over Aptos Node API.
 
 ```bash
 # Node
@@ -174,4 +170,14 @@ aptly table item <handle> --key-type <type> --value-type <type> --key <json>
 
 # View
 aptly view <function> --type-args <types> --args <json_args>
+
+# Tx
+# TODO: list tx commands besides what's mentioned above
 ```
+
+## TODOs
+
+- [ ] install script for aptos-script-compose
+- [ ] aptos-script-compose should skip the top layer "steps"
+- [ ] decompile to stdout
+- [ ] visualize tx trace with --open
