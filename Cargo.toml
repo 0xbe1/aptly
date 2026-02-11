@@ -11,6 +11,9 @@ edition = "2021"
 license = "MIT"
 version = "0.2.0"
 
+[workspace.metadata.release]
+tag-name = "v{{version}}"
+
 [workspace.dependencies]
 anyhow = "1.0"
 clap = { version = "4.5", features = ["derive"] }
