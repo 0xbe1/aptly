@@ -44,6 +44,10 @@ aptly address thala
 # Account source code (if published with metadata)
 aptly account source-code <address> [module_name] [--package <name>] [--raw]
 
+# If source metadata is unavailable, decompile bytecode instead
+aptly decompile address <address>
+aptly decompile module <address> <module_name>
+
 # Outgoing sends from an account
 aptly account sends <address> --limit 25 [--pretty]
 
@@ -55,6 +59,7 @@ aptly tx <version_or_hash> | aptly tx balance-change --aggregate
 ## Decompile Plugin (`move-decompiler`)
 
 `aptly` integrates with Aptos `move-decompiler` as an optional plugin.
+Use decompile as the default fallback whenever `aptly account source-code` cannot return source.
 
 ```bash
 # Check plugin installation

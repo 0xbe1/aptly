@@ -30,7 +30,10 @@ pub(crate) enum AccountSubcommand {
     Balance(BalanceArgs),
     Txs(TxsArgs),
     Sends(SendsArgs),
-    #[command(name = "source-code")]
+    #[command(
+        name = "source-code",
+        about = "Fetch published Move source metadata. If unavailable, use `aptly decompile`."
+    )]
     SourceCode(SourceCodeArgs),
 }
 
@@ -182,7 +185,10 @@ fn run_account_source_code(client: &AptosClient, args: &SourceCodeArgs) -> Resul
         Err(err) => {
             let message = err.to_string();
             if message.contains("resource_not_found") || message.contains("status 404") {
-                return Err(anyhow!("no code found at address"));
+                return Err(anyhow!(
+                    "no code metadata found at address; use `aptly decompile address {}`",
+                    args.address
+                ));
             }
             return Err(err);
         }
@@ -251,13 +257,16 @@ fn run_account_source_code(client: &AptosClient, args: &SourceCodeArgs) -> Resul
         if let Some(module_name) = module_filter {
             if module_exists {
                 return Err(anyhow!(
-                    "no source code available (compiled without --save-metadata)"
+                    "no source code available (compiled without --save-metadata); use `aptly decompile module {} {}`",
+                    args.address,
+                    module_name
                 ));
             }
             return Err(anyhow!("module {module_name:?} not found"));
         }
         return Err(anyhow!(
-            "no source code available (compiled without --save-metadata)"
+            "no source code available (compiled without --save-metadata); use `aptly decompile address {}`",
+            args.address
         ));
     }
 

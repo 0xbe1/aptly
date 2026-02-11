@@ -1,5 +1,13 @@
 # Making aptly Discoverable by Agents
 
+## Source Retrieval Rule (for agents and users)
+
+Always try `aptly account source-code` first. If source metadata is missing or unavailable, immediately fall back to `aptly decompile`.
+
+Examples:
+- `aptly decompile address <address>`
+- `aptly decompile module <address> <module_name>`
+
 ## 1. MCP Server (highest impact)
 
 MCP (Model Context Protocol) is the standard way agents discover and use tools.
