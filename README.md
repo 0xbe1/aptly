@@ -76,16 +76,9 @@ aptly decompile module 0x1 coin
 aptly decompile raw -- --help
 ```
 
-If `move-decompiler` is not on `PATH`:
-
-```bash
-export APTLY_MOVE_DECOMPILER_BIN=/path/to/move-decompiler
-```
-
 Binary resolution order for `aptly decompile` is:
 1. `--decompiler-bin /path/to/move-decompiler` (if provided)
-2. `APTLY_MOVE_DECOMPILER_BIN`
-3. `PATH` (`move-decompiler`)
+2. `PATH` (`move-decompiler`)
 
 Default wrapper output: `decompiled/<address>/`
 
@@ -108,16 +101,9 @@ cat compose_payload.json \
   | aptly tx simulate <sender>
 ```
 
-If `aptos-script-compose` is not on `PATH`:
-
-```bash
-export APTLY_APTOS_SCRIPT_COMPOSE_BIN=/path/to/aptos-script-compose
-```
-
 Binary resolution order for `aptos-script-compose` plugin checks:
 1. `--script-compose-bin /path/to/aptos-script-compose` (for `aptly plugin doctor`)
-2. `APTLY_APTOS_SCRIPT_COMPOSE_BIN`
-3. `PATH` (`aptos-script-compose`)
+2. `PATH` (`aptos-script-compose`)
 
 ## Trace API (Sentio)
 
@@ -140,8 +126,7 @@ aptly tx trace <tx_version_or_hash> --local-tracer /path/to/aptos-tracer
 
 For `--local-tracer`, binary resolution order is:
 1. `--local-tracer /path/to/aptos-tracer` (if provided)
-2. `APTLY_APTOS_TRACER_BIN`
-3. `PATH` (`aptos-tracer`)
+2. `PATH` (`aptos-tracer`)
 
 ## Transaction Helpers
 

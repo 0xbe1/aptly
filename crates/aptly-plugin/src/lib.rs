@@ -5,11 +5,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 const MOVE_DECOMPILER_BIN: &str = "move-decompiler";
-const APTLY_MOVE_DECOMPILER_BIN: &str = "APTLY_MOVE_DECOMPILER_BIN";
 const APTOS_TRACER_BIN: &str = "aptos-tracer";
-const APTLY_APTOS_TRACER_BIN: &str = "APTLY_APTOS_TRACER_BIN";
 const APTOS_SCRIPT_COMPOSE_BIN: &str = "aptos-script-compose";
-const APTLY_APTOS_SCRIPT_COMPOSE_BIN: &str = "APTLY_APTOS_SCRIPT_COMPOSE_BIN";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct PluginStatus {
@@ -153,11 +150,11 @@ pub fn run_move_decompiler(explicit_bin: Option<&str>, args: &[String]) -> Resul
 
 pub fn move_decompiler_install_hint() -> String {
     [
-        "Install move-decompiler from aptos-core and point aptly to it:",
+        "Install move-decompiler from aptos-core and put it on PATH (or pass --decompiler-bin):",
         "  git clone https://github.com/aptos-labs/aptos-core",
         "  cd aptos-core",
         "  cargo build -p move-decompiler --release",
-        "  export APTLY_MOVE_DECOMPILER_BIN=$PWD/target/release/move-decompiler",
+        "  export PATH=$PWD/target/release:$PATH",
         "or pass --decompiler-bin /path/to/move-decompiler",
     ]
     .join("\n")
@@ -262,11 +259,11 @@ pub fn resolve_aptos_tracer_bin(explicit_bin: Option<&str>) -> Result<PathBuf> {
 
 pub fn aptos_tracer_install_hint() -> String {
     [
-        "Install aptos-tracer from sentio aptos-core and point aptly to it:",
+        "Install aptos-tracer from sentio aptos-core and put it on PATH:",
         "  git clone --branch sentio/dev-2026-0210 https://github.com/sentioxyz/aptos-core.git",
         "  cd aptos-core",
         "  cargo build --locked --profile cli -p aptos-tracer",
-        "  export APTLY_APTOS_TRACER_BIN=$PWD/target/cli/aptos-tracer",
+        "  export PATH=$PWD/target/cli:$PATH",
         "or run `aptly tx trace <tx_version_or_hash> --local-tracer /path/to/aptos-tracer`",
     ]
     .join("\n")
@@ -371,9 +368,9 @@ pub fn resolve_aptos_script_compose_bin(explicit_bin: Option<&str>) -> Result<Pa
 
 pub fn aptos_script_compose_install_hint() -> String {
     [
-        "Install aptos-script-compose from aptly and point aptly to it:",
+        "Install aptos-script-compose from aptly and put it on PATH (or pass --script-compose-bin):",
         "  cargo build -p aptos-script-compose --release",
-        "  export APTLY_APTOS_SCRIPT_COMPOSE_BIN=$PWD/target/release/aptos-script-compose",
+        "  export PATH=$PWD/target/release:$PATH",
         "or pass --script-compose-bin /path/to/aptos-script-compose",
     ]
     .join("\n")
@@ -385,15 +382,6 @@ fn resolve_move_decompiler(explicit_bin: Option<&str>) -> DiscoveryResult {
             return DiscoveryResult {
                 path: Some(PathBuf::from(bin)),
                 source: Some("flag:--decompiler-bin".to_owned()),
-            };
-        }
-    }
-
-    if let Ok(path) = env::var(APTLY_MOVE_DECOMPILER_BIN) {
-        if !path.trim().is_empty() {
-            return DiscoveryResult {
-                path: Some(PathBuf::from(path)),
-                source: Some(format!("env:{APTLY_MOVE_DECOMPILER_BIN}")),
             };
         }
     }
@@ -421,15 +409,6 @@ fn resolve_aptos_tracer(explicit_bin: Option<&str>) -> DiscoveryResult {
         }
     }
 
-    if let Ok(path) = env::var(APTLY_APTOS_TRACER_BIN) {
-        if !path.trim().is_empty() {
-            return DiscoveryResult {
-                path: Some(PathBuf::from(path)),
-                source: Some(format!("env:{APTLY_APTOS_TRACER_BIN}")),
-            };
-        }
-    }
-
     if let Some(path) = find_in_path(APTOS_TRACER_BIN) {
         return DiscoveryResult {
             path: Some(path),
@@ -449,15 +428,6 @@ fn resolve_aptos_script_compose(explicit_bin: Option<&str>) -> DiscoveryResult {
             return DiscoveryResult {
                 path: Some(PathBuf::from(bin)),
                 source: Some("flag:--script-compose-bin".to_owned()),
-            };
-        }
-    }
-
-    if let Ok(path) = env::var(APTLY_APTOS_SCRIPT_COMPOSE_BIN) {
-        if !path.trim().is_empty() {
-            return DiscoveryResult {
-                path: Some(PathBuf::from(path)),
-                source: Some(format!("env:{APTLY_APTOS_SCRIPT_COMPOSE_BIN}")),
             };
         }
     }

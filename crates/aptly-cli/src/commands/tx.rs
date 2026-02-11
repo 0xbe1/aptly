@@ -282,7 +282,7 @@ fn run_local_trace_with_aptos_tracer(
 ) -> Result<String> {
     let tracer_bin = resolve_aptos_tracer_bin(explicit_tracer_bin).map_err(|err| {
         anyhow!(
-            "{err}\nHint: use `--local-tracer /path/to/aptos-tracer`, or set `APTLY_APTOS_TRACER_BIN`, or install `aptos-tracer` into PATH."
+            "{err}\nHint: use `--local-tracer /path/to/aptos-tracer`, or install `aptos-tracer` into PATH."
         )
     })?;
     let mut command = Command::new(&tracer_bin);
