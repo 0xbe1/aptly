@@ -77,6 +77,11 @@ If `move-decompiler` is not on `PATH`:
 export APTLY_MOVE_DECOMPILER_BIN=/path/to/move-decompiler
 ```
 
+Binary resolution order for `aptly decompile` is:
+1. `--decompiler-bin /path/to/move-decompiler` (if provided)
+2. `APTLY_MOVE_DECOMPILER_BIN`
+3. `PATH` (`move-decompiler`)
+
 Default wrapper output: `decompiled/<address>/`
 
 ## Trace API (Sentio)

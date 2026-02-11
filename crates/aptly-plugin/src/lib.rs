@@ -8,7 +8,6 @@ const MOVE_DECOMPILER_BIN: &str = "move-decompiler";
 const APTLY_MOVE_DECOMPILER_BIN: &str = "APTLY_MOVE_DECOMPILER_BIN";
 const APTOS_TRACER_BIN: &str = "aptos-tracer";
 const APTLY_APTOS_TRACER_BIN: &str = "APTLY_APTOS_TRACER_BIN";
-const APTOS_CORE_PATH: &str = "APTOS_CORE_PATH";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct PluginStatus {
@@ -295,25 +294,6 @@ fn resolve_move_decompiler(explicit_bin: Option<&str>) -> DiscoveryResult {
             path: Some(path),
             source: Some("PATH".to_owned()),
         };
-    }
-
-    if let Ok(aptos_core_path) = env::var(APTOS_CORE_PATH) {
-        let candidates = [
-            Path::new(&aptos_core_path)
-                .join("target")
-                .join("release")
-                .join(MOVE_DECOMPILER_BIN),
-            Path::new(&aptos_core_path)
-                .join("target")
-                .join("debug")
-                .join(MOVE_DECOMPILER_BIN),
-        ];
-        if let Some(found) = candidates.into_iter().find(|path| path.is_file()) {
-            return DiscoveryResult {
-                path: Some(found),
-                source: Some(format!("env:{APTOS_CORE_PATH}")),
-            };
-        }
     }
 
     DiscoveryResult {
