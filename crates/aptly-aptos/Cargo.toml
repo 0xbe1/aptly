@@ -3,6 +3,8 @@ name = "aptly-aptos"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "Aptos-specific package repository integrations for aptly-cli"
+repository = "https://github.com/0xbe1/aptly"
 
 [dependencies]
 anyhow.workspace = true
