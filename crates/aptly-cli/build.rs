@@ -23,12 +23,15 @@ fn main() {
 
 fn git_describe() -> Option<String> {
     Command::new("git")
-        .args(["describe", "--tags", "--abbrev=0"])
+        .args(["describe", "--tags", "--match", "aptly-cli-v*", "--abbrev=0"])
         .output()
         .ok()
         .filter(|o| o.status.success())
         .and_then(|o| String::from_utf8(o.stdout).ok())
-        .map(|s| s.trim().to_string())
+        .map(|s| {
+            let tag = s.trim();
+            tag.strip_prefix("aptly-cli-").unwrap_or(tag).to_string()
+        })
 }
 
 fn git_short_sha() -> Option<String> {

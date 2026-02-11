@@ -21,19 +21,24 @@ case "$ARCH" in
     *) echo "Unsupported architecture: $ARCH" && exit 1 ;;
 esac
 
-# Get latest version
-VERSION=$(curl -sI "https://github.com/$REPO/releases/latest" | grep -i "location:" | sed 's/.*tag\///' | tr -d '\r\n')
+# Get latest aptly-cli release tag
+TAG=$(curl -fsSL "https://api.github.com/repos/$REPO/releases?per_page=100" \
+  | grep -o '"tag_name":[[:space:]]*"aptly-cli-v[^"]*"' \
+  | head -n1 \
+  | sed -E 's/.*"([^"]+)"/\1/')
 
-if [ -z "$VERSION" ]; then
-    echo "Failed to fetch latest version"
+if [ -z "$TAG" ]; then
+    echo "Failed to fetch latest aptly-cli release tag"
     exit 1
 fi
 
-echo "Installing $BINARY $VERSION for ${OS}/${ARCH}..."
+VERSION="${TAG#aptly-cli-}"
+
+echo "Installing $BINARY ${VERSION} (${TAG}) for ${OS}/${ARCH}..."
 
 # Download and extract
 ARCHIVE="${BINARY}_${VERSION}_${OS}_${ARCH}.tar.gz"
-URL="https://github.com/$REPO/releases/download/$VERSION/$ARCHIVE"
+URL="https://github.com/$REPO/releases/download/$TAG/$ARCHIVE"
 
 curl -sL "$URL" | tar xz
 

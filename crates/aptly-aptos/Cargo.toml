@@ -1,6 +1,6 @@
 [package]
 name = "aptly-aptos"
-version.workspace = true
+version = "0.2.0"
 edition.workspace = true
 license.workspace = true
 description = "Aptos-specific package repository integrations for aptly-cli"
