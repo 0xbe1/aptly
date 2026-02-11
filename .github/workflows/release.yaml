@@ -3,10 +3,16 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'aptly-cli-v*'
+      - 'aptos-script-compose-v*'
 
 permissions:
   contents: write
+
+env:
+  RELEASE_TAG: ${{ github.ref_name }}
+  RELEASE_PACKAGE: ${{ startsWith(github.ref_name, 'aptos-script-compose-v') && 'aptos-script-compose' || 'aptly-cli' }}
+  RELEASE_BIN: ${{ startsWith(github.ref_name, 'aptos-script-compose-v') && 'aptos-script-compose' || 'aptly' }}
 
 jobs:
   build-darwin-amd64:
@@ -29,18 +35,18 @@ jobs:
           APTLY_VERSION: ${{ steps.version.outputs.VERSION }}
           APTLY_GIT_SHA: ${{ steps.version.outputs.COMMIT_SHA }}
           APTLY_BUILD_DATE: ${{ steps.version.outputs.BUILD_DATE }}
-        run: cargo build -p aptly-cli --release --bin aptly
+        run: cargo build -p "$RELEASE_PACKAGE" --release --bin "$RELEASE_BIN"
 
       - name: Create archive
         run: |
-          cp target/release/aptly aptly
-          tar -czvf aptly_${{ steps.version.outputs.VERSION }}_darwin_amd64.tar.gz aptly
+          cp "target/release/${RELEASE_BIN}" "${RELEASE_BIN}"
+          tar -czvf "${RELEASE_BIN}_${{ steps.version.outputs.VERSION }}_darwin_amd64.tar.gz" "${RELEASE_BIN}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: aptly_darwin_amd64
-          path: aptly_${{ steps.version.outputs.VERSION }}_darwin_amd64.tar.gz
+          name: ${{ env.RELEASE_BIN }}_darwin_amd64
+          path: ${{ env.RELEASE_BIN }}_${{ steps.version.outputs.VERSION }}_darwin_amd64.tar.gz
 
   build-darwin-arm64:
     runs-on: macos-latest
@@ -62,18 +68,18 @@ jobs:
           APTLY_VERSION: ${{ steps.version.outputs.VERSION }}
           APTLY_GIT_SHA: ${{ steps.version.outputs.COMMIT_SHA }}
           APTLY_BUILD_DATE: ${{ steps.version.outputs.BUILD_DATE }}
-        run: cargo build -p aptly-cli --release --bin aptly
+        run: cargo build -p "$RELEASE_PACKAGE" --release --bin "$RELEASE_BIN"
 
       - name: Create archive
         run: |
-          cp target/release/aptly aptly
-          tar -czvf aptly_${{ steps.version.outputs.VERSION }}_darwin_arm64.tar.gz aptly
+          cp "target/release/${RELEASE_BIN}" "${RELEASE_BIN}"
+          tar -czvf "${RELEASE_BIN}_${{ steps.version.outputs.VERSION }}_darwin_arm64.tar.gz" "${RELEASE_BIN}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: aptly_darwin_arm64
-          path: aptly_${{ steps.version.outputs.VERSION }}_darwin_arm64.tar.gz
+          name: ${{ env.RELEASE_BIN }}_darwin_arm64
+          path: ${{ env.RELEASE_BIN }}_${{ steps.version.outputs.VERSION }}_darwin_arm64.tar.gz
 
   build-linux-amd64:
     runs-on: ubuntu-latest
@@ -95,18 +101,18 @@ jobs:
           APTLY_VERSION: ${{ steps.version.outputs.VERSION }}
           APTLY_GIT_SHA: ${{ steps.version.outputs.COMMIT_SHA }}
           APTLY_BUILD_DATE: ${{ steps.version.outputs.BUILD_DATE }}
-        run: cargo build -p aptly-cli --release --bin aptly
+        run: cargo build -p "$RELEASE_PACKAGE" --release --bin "$RELEASE_BIN"
 
       - name: Create archive
         run: |
-          cp target/release/aptly aptly
-          tar -czvf aptly_${{ steps.version.outputs.VERSION }}_linux_amd64.tar.gz aptly
+          cp "target/release/${RELEASE_BIN}" "${RELEASE_BIN}"
+          tar -czvf "${RELEASE_BIN}_${{ steps.version.outputs.VERSION }}_linux_amd64.tar.gz" "${RELEASE_BIN}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: aptly_linux_amd64
-          path: aptly_${{ steps.version.outputs.VERSION }}_linux_amd64.tar.gz
+          name: ${{ env.RELEASE_BIN }}_linux_amd64
+          path: ${{ env.RELEASE_BIN }}_${{ steps.version.outputs.VERSION }}_linux_amd64.tar.gz
 
   build-linux-arm64:
     runs-on: ubuntu-24.04-arm
@@ -128,18 +134,18 @@ jobs:
           APTLY_VERSION: ${{ steps.version.outputs.VERSION }}
           APTLY_GIT_SHA: ${{ steps.version.outputs.COMMIT_SHA }}
           APTLY_BUILD_DATE: ${{ steps.version.outputs.BUILD_DATE }}
-        run: cargo build -p aptly-cli --release --bin aptly
+        run: cargo build -p "$RELEASE_PACKAGE" --release --bin "$RELEASE_BIN"
 
       - name: Create archive
         run: |
-          cp target/release/aptly aptly
-          tar -czvf aptly_${{ steps.version.outputs.VERSION }}_linux_arm64.tar.gz aptly
+          cp "target/release/${RELEASE_BIN}" "${RELEASE_BIN}"
+          tar -czvf "${RELEASE_BIN}_${{ steps.version.outputs.VERSION }}_linux_arm64.tar.gz" "${RELEASE_BIN}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: aptly_linux_arm64
-          path: aptly_${{ steps.version.outputs.VERSION }}_linux_arm64.tar.gz
+          name: ${{ env.RELEASE_BIN }}_linux_arm64
+          path: ${{ env.RELEASE_BIN }}_${{ steps.version.outputs.VERSION }}_linux_arm64.tar.gz
 
   publish:
     needs: [build-darwin-amd64, build-darwin-arm64, build-linux-amd64, build-linux-arm64]
@@ -163,7 +169,7 @@ jobs:
 
       - name: Generate changelog
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          PREV_TAG=$(git tag --list "${RELEASE_PACKAGE}-v*" --sort=-version:refname | sed -n '2p')
           if [ -n "$PREV_TAG" ]; then
             echo "## Changes since $PREV_TAG" > changelog.md
             echo "" >> changelog.md
@@ -175,9 +181,15 @@ jobs:
           echo "" >> changelog.md
           echo "## Installation" >> changelog.md
           echo "" >> changelog.md
-          echo '```bash' >> changelog.md
-          echo "curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install.sh | sh" >> changelog.md
-          echo '```' >> changelog.md
+          if [ "$RELEASE_BIN" = "aptly" ]; then
+            echo '```bash' >> changelog.md
+            echo "curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install.sh | sh" >> changelog.md
+            echo '```' >> changelog.md
+          else
+            echo '```bash' >> changelog.md
+            echo "cargo install --path crates/aptos-script-compose" >> changelog.md
+            echo '```' >> changelog.md
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
