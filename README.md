@@ -5,7 +5,11 @@ Best Aptos CLI for agents.
 ## Installation
 
 ```bash
+# aptly
 curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install.sh | sh
+
+# aptos-script-compose
+curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-compose.sh | sh
 ```
 
 ## Usage
@@ -173,7 +177,6 @@ aptly tx balance-change [version_or_hash] [--aggregate]
 
 ## TODOs
 
-- [ ] install script for aptos-script-compose
 - [ ] aptos-script-compose should skip the top layer "steps"
 - [ ] add tx compose subcommand
 - [ ] decompile to stdout

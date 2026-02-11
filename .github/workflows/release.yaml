@@ -187,7 +187,7 @@ jobs:
             echo '```' >> changelog.md
           else
             echo '```bash' >> changelog.md
-            echo "cargo install --path crates/aptos-script-compose" >> changelog.md
+            echo "curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-compose.sh | sh" >> changelog.md
             echo '```' >> changelog.md
           fi
 

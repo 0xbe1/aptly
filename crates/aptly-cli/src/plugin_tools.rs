@@ -350,8 +350,7 @@ pub fn doctor_aptos_script_compose(explicit_bin: Option<&str>) -> PluginDoctorRe
 pub fn aptos_script_compose_install_hint() -> String {
     [
         "Install aptos-script-compose from aptly and put it on PATH (or pass --script-compose-bin):",
-        "  cargo build -p aptos-script-compose --release",
-        "  export PATH=$PWD/target/release:$PATH",
+        "  curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-compose.sh | sh",
         "or pass --script-compose-bin /path/to/aptos-script-compose",
     ]
     .join("\n")
