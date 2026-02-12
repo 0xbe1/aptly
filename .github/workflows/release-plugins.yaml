@@ -1,0 +1,134 @@
+name: Release Plugin Binaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Existing release tag to attach plugin assets to (for example: aptly-cli-v0.4.0)"
+        required: true
+        type: string
+      plugin:
+        description: "Which plugin(s) to release"
+        required: true
+        default: both
+        type: choice
+        options:
+          - both
+          - move-decompiler
+          - aptos-tracer
+      move_decompiler_source_ref:
+        description: "Pinned ref (commit SHA recommended) for aptos-labs/aptos-core"
+        required: false
+        default: "86b5c582bc41c055ec54ccf668e46ff4dcc2cf13"
+        type: string
+      aptos_tracer_source_ref:
+        description: "Pinned ref (commit SHA recommended) for sentioxyz/aptos-core"
+        required: false
+        default: "4912ded475e318d2d879d47d0ed542f6a43c2cf0"
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: ${{ inputs.release_tag }}
+
+jobs:
+  build:
+    if: ${{ inputs.plugin == 'both' || inputs.plugin == matrix.plugin.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin:
+          - name: move-decompiler
+            source_repo: aptos-labs/aptos-core
+            build_cmd: cargo build -p move-decompiler --release
+            build_output: target/release/move-decompiler
+          - name: aptos-tracer
+            source_repo: sentioxyz/aptos-core
+            build_cmd: cargo build --locked --profile cli -p aptos-tracer
+            build_output: target/cli/aptos-tracer
+        target:
+          - runner: macos-15-intel
+            os: darwin
+            arch: amd64
+          - runner: macos-latest
+            os: darwin
+            arch: arm64
+          - runner: ubuntu-latest
+            os: linux
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            os: linux
+            arch: arm64
+    runs-on: ${{ matrix.target.runner }}
+    steps:
+      - name: Checkout plugin source repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.plugin.source_repo }}
+          ref: ${{ matrix.plugin.name == 'move-decompiler' && inputs.move_decompiler_source_ref || inputs.aptos_tracer_source_ref }}
+          fetch-depth: 1
+          path: source
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        working-directory: source
+        run: ${{ matrix.plugin.build_cmd }}
+
+      - name: Create archive
+        run: |
+          cp "source/${{ matrix.plugin.build_output }}" "${{ matrix.plugin.name }}"
+          chmod +x "${{ matrix.plugin.name }}"
+          tar -czvf "${{ matrix.plugin.name }}_${RELEASE_TAG}_${{ matrix.target.os }}_${{ matrix.target.arch }}.tar.gz" "${{ matrix.plugin.name }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.plugin.name }}_${{ matrix.target.os }}_${{ matrix.target.arch }}
+          path: ${{ matrix.plugin.name }}_${{ env.RELEASE_TAG }}_${{ matrix.target.os }}_${{ matrix.target.arch }}.tar.gz
+
+  publish:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install GitHub CLI
+        run: |
+          type gh >/dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y gh)
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+          find artifacts -name '*.tar.gz' -exec mv {} release/ \;
+          cd release
+          sha256sum *.tar.gz > plugin-checksums.txt
+
+      - name: Wait for aptly-cli release to exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 60); do
+            if gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Timed out waiting for release ${RELEASE_TAG}"
+          exit 1
+
+      - name: Upload plugin assets into aptly-cli release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${RELEASE_TAG}" \
+            release/*.tar.gz \
+            release/plugin-checksums.txt \
+            --repo "${GITHUB_REPOSITORY}" \
+            --clobber

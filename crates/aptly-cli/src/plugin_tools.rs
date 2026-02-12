@@ -150,7 +150,9 @@ pub fn run_move_decompiler(explicit_bin: Option<&str>, args: &[String]) -> Resul
 
 pub fn move_decompiler_install_hint() -> String {
     [
-        "Install move-decompiler from aptos-core and put it on PATH (or pass --decompiler-bin):",
+        "Install move-decompiler and put it on PATH (or pass --decompiler-bin):",
+        "  curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-decompiler.sh | sh",
+        "or build from aptos-core:",
         "  git clone https://github.com/aptos-labs/aptos-core",
         "  cd aptos-core",
         "  cargo build -p move-decompiler --release",
@@ -259,7 +261,9 @@ pub fn resolve_aptos_tracer_bin(explicit_bin: Option<&str>) -> Result<PathBuf> {
 
 pub fn aptos_tracer_install_hint() -> String {
     [
-        "Install aptos-tracer from sentio aptos-core and put it on PATH:",
+        "Install aptos-tracer and put it on PATH:",
+        "  curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-tracer.sh | sh",
+        "or build from sentio aptos-core:",
         "  git clone --branch sentio/dev-2026-0210 https://github.com/sentioxyz/aptos-core.git",
         "  cd aptos-core",
         "  cargo build --locked --profile cli -p aptos-tracer",

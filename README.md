@@ -10,6 +10,12 @@ curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install.sh | sh
 
 # aptos-script-compose
 curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-compose.sh | sh
+
+# move-decompiler (for `aptly decompile`)
+curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-decompiler.sh | sh
+
+# aptos-tracer (for `aptly tx trace --local-tracer`)
+curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-tracer.sh | sh
 ```
 
 ## Usage
@@ -181,4 +187,3 @@ aptly tx balance-change [version_or_hash] [--aggregate]
 - [ ] decompile to stdout
 - [ ] decompile args should be identical to source-code args
 - [ ] visualize tx trace with --open
-- [ ] release move-decompiler and aptos-tracer
