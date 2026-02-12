@@ -8,14 +8,17 @@ Best Aptos CLI for agents.
 # aptly
 curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install.sh | sh
 
-# aptos-script-compose
-curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-compose.sh | sh
-
 # move-decompiler (for `aptly decompile`)
-curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-decompiler.sh | sh
+curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-plugin.sh | sh -s -- move-decompiler
 
 # aptos-tracer (for `aptly tx trace --local-tracer`)
-curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-tracer.sh | sh
+curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-plugin.sh | sh -s -- aptos-tracer
+
+# aptos-script-compose
+curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-plugin.sh | sh -s -- aptos-script-compose
+
+# install multiple plugins in one shot
+curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-plugin.sh | sh -s -- move-decompiler aptos-tracer
 ```
 
 ## Usage

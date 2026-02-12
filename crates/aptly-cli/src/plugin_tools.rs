@@ -151,7 +151,7 @@ pub fn run_move_decompiler(explicit_bin: Option<&str>, args: &[String]) -> Resul
 pub fn move_decompiler_install_hint() -> String {
     [
         "Install move-decompiler and put it on PATH (or pass --decompiler-bin):",
-        "  curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-decompiler.sh | sh",
+        "  curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-plugin.sh | sh -s -- move-decompiler",
         "or build from aptos-core:",
         "  git clone https://github.com/aptos-labs/aptos-core",
         "  cd aptos-core",
@@ -262,7 +262,7 @@ pub fn resolve_aptos_tracer_bin(explicit_bin: Option<&str>) -> Result<PathBuf> {
 pub fn aptos_tracer_install_hint() -> String {
     [
         "Install aptos-tracer and put it on PATH:",
-        "  curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-tracer.sh | sh",
+        "  curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-plugin.sh | sh -s -- aptos-tracer",
         "or build from sentio aptos-core:",
         "  git clone --branch sentio/dev-2026-0210 https://github.com/sentioxyz/aptos-core.git",
         "  cd aptos-core",
@@ -354,7 +354,7 @@ pub fn doctor_aptos_script_compose(explicit_bin: Option<&str>) -> PluginDoctorRe
 pub fn aptos_script_compose_install_hint() -> String {
     [
         "Install aptos-script-compose from aptly and put it on PATH (or pass --script-compose-bin):",
-        "  curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-compose.sh | sh",
+        "  curl -sSL https://raw.githubusercontent.com/0xbe1/aptly/main/install-plugin.sh | sh -s -- aptos-script-compose",
         "or pass --script-compose-bin /path/to/aptos-script-compose",
     ]
     .join("\n")
